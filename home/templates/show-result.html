@@ -1,41 +1,174 @@
 {% extends 'base.html' %}
-
 {% load static %}
 
-{% block head %}
-    <link rel="stylesheet" type="text/css" href="{% static 'css/show-result.css' %}">
+{% block title %}Verified Election Results — BallotChain{% endblock %}
 
+{% block head %}
+    <link rel="stylesheet" type="text/css" href="{% static 'dist/island.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/show-result.css' %}">
     <script src="{% static 'scripts/base.js' %}"></script>
-    <script>
-        $(document).ready(function(){
-            hide_loading();
-            showAlert('Vote count.', 'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)');
-        });
-    </script>
+    <script type="module" src="{% static 'dist/island.js' %}"></script>
+{% endblock %}
+
+{% block breadcrumb %}
+    <a href="/dashboard/" style="color: var(--bc-slate-500); text-decoration: none;">Dashboard</a>
+    <span style="margin: 0 6px; color: var(--bc-slate-400);">/</span>
+    <span>Verified Results</span>
 {% endblock %}
 
 {% block main_content %}
 
-<div class="show-result">
+<!-- Django safe JSON serialization of server results context -->
+{{ results|json_script:"ballotchain-results-data" }}
 
-    <table class="vote-count">
-        <tr class="table-header">
-            <td>Sr. No.</td>
-            <td>Party Symbol</td>
-            <td>Party Name</td>
-            <td>Vote Count</td>
-        </tr>
-        {% for result in results %}
-        <tr>
-            <td>{{ result.sr }}</td>
-            <td><img style="width: 60px;" src="{% static result.party_symbol %}"></td>
-            <td>{{ result.party_name }}</td>
-            <td>{{ result.vote_count }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+<div style="max-width: 860px; margin: 24px auto; padding: 0 16px;">
+
+    <!-- Election Context & Selector Header -->
+    <div class="card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+            <div>
+                <div style="font-size: 11px; font-weight: 700; color: #4f46e5; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px;">
+                    BallotChain Cryptographic Audit & Verification
+                </div>
+                <h1 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0;">
+                    {% if election %}{{ election.title }}{% else %}Election Results{% endif %}
+                </h1>
+                <p style="font-size: 13px; color: #64748b; margin: 0;">
+                    Host Organization: <strong>{{ election.organization.name|default:"General Institutional Member" }}</strong>
+                </p>
+            </div>
+
+            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                {% if election %}
+                    {% if election.is_published %}
+                        <span class="badge badge-success" style="font-size: 12px; padding: 5px 12px;">
+                            Official Results Certified
+                        </span>
+                    {% elif election.status == 'OPEN' and election.live_progress_enabled %}
+                        <span class="status-pill open" style="font-size: 12px;">
+                            Live Election Progress
+                        </span>
+                    {% elif election.status == 'OPEN' %}
+                        <span class="status-pill open" style="font-size: 12px;">
+                            Voting In Progress (Private Tally)
+                        </span>
+                    {% elif election.status == 'CLOSED' %}
+                        <span class="status-pill closed" style="font-size: 12px;">
+                            Verification In Progress
+                        </span>
+                    {% else %}
+                        <span class="badge badge-neutral" style="font-size: 12px;">
+                            DRAFT State
+                        </span>
+                    {% endif %}
+                {% endif %}
+
+                {% if all_elections|length > 1 %}
+                    <select onchange="window.location.href='/show-result/?election_id=' + this.value" class="form-input" style="font-size: 12px; height: 32px; padding: 0 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                        {% for el in all_elections %}
+                            <option value="{{ el.id }}" {% if election.id == el.id %}selected{% endif %}>
+                                {{ el.title|truncatechars:35 }} ({{ el.status }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if election.is_published and election.publication_receipt %}
+        <!-- Deterministic Cryptographic Receipt Card -->
+        <div style="margin-top: 18px; padding: 12px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <span style="font-size: 11px; font-weight: 700; color: #15803d; text-transform: uppercase;">Deterministic Publication Receipt (SHA3-256)</span>
+                <span style="font-size: 11px; color: #16a34a; font-weight: 600;">Verified Consensual Seal</span>
+            </div>
+            <div style="font-family: monospace; font-size: 12px; color: #166534; word-break: break-all; background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #dcfce7;">
+                {{ election.publication_receipt }}
+            </div>
+            <div style="font-size: 11px; color: #15803d; margin-top: 4px;">
+                Certified at: {{ election.published_at|date:"Y-m-d H:i:s" }} UTC
+            </div>
+        </div>
+        {% endif %}
+        {% if live_progress_stats %}
+        <!-- Live Election Progress (Interim Verified Tally) -->
+        <div style="margin-top: 18px; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                    <span style="font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em;">Live Election Progress</span>
+                </div>
+                <span class="badge badge-success" style="font-size: 11px;">Live Election Progress</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; text-align: center;">
+                <div style="padding: 10px; background: #ffffff; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <span style="font-size: 18px; font-weight: 800; color: #4f46e5; display: block;">{{ live_progress_stats.ballots_submitted }}</span>
+                    <span style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase;">Ballots Submitted</span>
+                </div>
+                <div style="padding: 10px; background: #ffffff; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <span style="font-size: 18px; font-weight: 800; color: #059669; display: block;">{{ live_progress_stats.votes_recorded }}</span>
+                    <span style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase;">Votes Recorded</span>
+                </div>
+                <div style="padding: 10px; background: #ffffff; border-radius: 6px; border: 1px solid #e2e8f0;">
+                    <span style="font-size: 13px; font-weight: 700; color: #0f172a; display: block; margin-top: 3px;">{{ live_progress_stats.status }}</span>
+                    <span style="font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase;">Status</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if no_elections %}
+        <!-- Empty State Card -->
+        <div class="card" style="text-align: center; padding: 48px 24px;">
+            <div style="font-size: 16px; font-weight: 600; color: #334155; margin-bottom: 6px;">No Elections Configured</div>
+            <p style="font-size: 13px; color: #64748b; margin: 0;">Verified election results will be displayed here once an organizational election is created and voting is conducted.</p>
+        </div>
+    {% elif not results_visible %}
+        <!-- Lifecycle Notice: Results Withheld -->
+        <div class="card" style="text-align: center; padding: 36px 20px; border-left: 4px solid #f59e0b; margin-bottom: 24px;">
+            <div style="font-size: 16px; font-weight: 700; color: #92400e; margin-bottom: 6px;">Results Currently Unavailable</div>
+            <p style="font-size: 13px; color: #78350f; max-width: 560px; margin: 0 auto;">
+                {{ status_notice }}
+            </p>
+        </div>
+
+        <!-- Accessible Baseline Table (Empty / Pending State) -->
+        <div class="card" style="opacity: 0.7;">
+            <table class="vote-count" aria-label="Tabular Vote Count" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr class="table-header">
+                        <th style="text-align: left; padding: 10px 12px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Rank</th>
+                        <th style="text-align: left; padding: 10px 12px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Candidate</th>
+                        <th style="text-align: right; padding: 10px 12px; font-size: 12px; font-weight: 700; color: #475569; text-transform: uppercase;">Verified Vote Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="3" style="padding: 16px; text-align: center; color: #94a3b8; font-size: 13px;">
+                            Official tally withheld per election privacy rules until verification and certification.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+
+        <!-- React Animated Roster Mount Point (if island active) -->
+        <div id="ballotchain-roster-island-root" data-island="animated-candidate-roster" style="width: 100%; margin-bottom: 20px;"></div>
+
+        <!-- Cryptographic Ledger Verification Seal -->
+        <div style="margin-top: 18px; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span style="font-size: 13px; font-weight: 600; color: #334155;">Cryptographically Verified via BallotChain Distributed Ledger</span>
+            </div>
+            <a href="/blockchain/" class="btn btn-secondary btn-sm" style="text-decoration: none;">
+                Inspect Ledger Blocks &rarr;
+            </a>
+        </div>
+
+    {% endif %}
 
 </div>
-
 {% endblock %}
-

@@ -1,0 +1,560 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ election.title }} — BallotChain{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'dist/island.css' %}">
+<style>
+    .election-detail-container {
+        max-width: 960px;
+        margin: 30px auto;
+        padding: 0 20px;
+    }
+    .back-nav {
+        margin-bottom: 20px;
+    }
+    .back-nav a {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: #4f46e5;
+        font-weight: 500;
+        font-size: 14px;
+        text-decoration: none;
+    }
+    .back-nav a:hover {
+        text-decoration: underline;
+    }
+    .election-header-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 24px 28px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        margin-bottom: 24px;
+    }
+    .election-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    .election-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 6px 0;
+    }
+    .election-org-subtitle {
+        font-size: 14px;
+        color: #6b7280;
+        margin: 0;
+    }
+    .status-badge-container {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .badge.open {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .badge.closed {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+    .badge.draft {
+        background: #fef3c7;
+        color: #92400e;
+    }
+    .badge.published {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+    .election-desc {
+        margin: 16px 0 0 0;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #374151;
+    }
+    .availability-card {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 20px 24px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    .availability-info {
+        flex: 1;
+        min-width: 250px;
+    }
+    .availability-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+    .availability-desc {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+    }
+    .position-section {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        margin-bottom: 24px;
+    }
+    .position-heading {
+        font-size: 18px;
+        font-weight: 700;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+    .position-subheading {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 0 0 16px 0;
+    }
+    .candidates-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 16px;
+    }
+    .candidate-card-summary {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .cand-img-circle {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        object-fit: cover;
+        background: #ffffff;
+        border: 2px solid #e5e7eb;
+        margin-bottom: 12px;
+    }
+    .cand-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #111827;
+        margin: 0 0 4px 0;
+    }
+    .cand-bio {
+        font-size: 12px;
+        color: #6b7280;
+        margin: 0;
+        line-height: 1.4;
+    }
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    .btn-primary {
+        background: #4f46e5;
+        color: #ffffff;
+    }
+    .btn-primary:hover {
+        background: #4338ca;
+    }
+    .btn-secondary {
+        background: #ffffff;
+        color: #374151;
+        border-color: #d1d5db;
+    }
+    .btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+    }
+    .admin-controls-card {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="election-detail-container">
+
+    <div class="back-nav">
+        <a href="/dashboard/">← Back to Dashboard</a>
+    </div>
+
+    <!-- Election Header Card -->
+    <div class="election-header-card">
+        <div class="election-title-row">
+            <div>
+                <h1 class="election-title">{{ election.title }}</h1>
+                <p class="election-org-subtitle">Organization: <strong>{{ election.organization.name|default:"General / Independent" }}</strong></p>
+            </div>
+            <div class="status-badge-container">
+                <span class="badge {{ election.status|lower }}">{{ election.status }}</span>
+                {% if election.is_published %}
+                    <span class="badge published">Published</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if election.description %}
+            <p class="election-desc">{{ election.description }}</p>
+        {% endif %}
+    </div>
+
+    <!-- Administrative Lifecycle Controls (if user has management authority) -->
+    {% if can_manage %}
+    <div class="admin-controls-card">
+        <div>
+            <strong style="font-size: 13px; color: #1e293b;">Lifecycle Controls:</strong>
+            <span style="font-size: 12px; color: #64748b; margin-left: 6px;">Authorized for {{ account_persona }}</span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            {% if election.status == 'DRAFT' %}
+                <form method="post" action="/elections/{{ election.id }}/start/" style="display: inline; margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-action btn-primary" onclick="return confirm('Start this election now? Voting will open.');">Start Election</button>
+                </form>
+                <a href="/elections/{{ election.id }}/edit/" class="btn-action btn-secondary">Edit Election</a>
+            {% elif election.status == 'OPEN' %}
+                <form method="post" action="/elections/{{ election.id }}/end/" style="display: inline; margin: 0;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-action btn-secondary" style="color: #dc2626; border-color: #fca5a5;" onclick="return confirm('Are you sure you want to END this election? Voting will be permanently stopped.');">End Election</button>
+                </form>
+                <a href="/elections/{{ election.id }}/edit/" class="btn-action btn-secondary">Edit</a>
+            {% elif election.status == 'CLOSED' %}
+                {% if not election.is_published %}
+                    <form method="post" action="/elections/{{ election.id }}/publish/" style="display: inline; margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-action btn-primary" onclick="return confirm('Certify and publish verified results?');">Publish Official Results</button>
+                    </form>
+                {% else %}
+                    <a href="/show-result/?election_id={{ election.id }}" class="btn-action btn-secondary">Audit Results</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if live_progress_stats %}
+    <!-- Live Election Progress Card (No Raw JSON) -->
+    <div class="card" style="margin-bottom: 24px; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                <h3 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 0;">Live Election Progress</h3>
+            </div>
+            <span class="badge badge-success" style="font-size: 11px; padding: 4px 10px;">Live Election Progress</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;">
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; text-align: center;">
+                <span style="font-size: 20px; font-weight: 800; color: #4f46e5; display: block;">{{ live_progress_stats.ballots_submitted }}</span>
+                <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Ballots Submitted</span>
+            </div>
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; text-align: center;">
+                <span style="font-size: 20px; font-weight: 800; color: #059669; display: block;">{{ live_progress_stats.votes_recorded }}</span>
+                <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Votes Recorded</span>
+            </div>
+            <div style="padding: 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; text-align: center;">
+                <span style="font-size: 14px; font-weight: 700; color: #0f172a; display: block; margin-top: 4px;">{{ live_progress_stats.status }}</span>
+                <span style="font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase;">Status</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Voting Availability Section (Voters and Candidates only; hidden for Platform Admin) -->
+    {% if not is_platform_admin and account_persona != 'PLATFORM_ADMIN' %}
+    <div class="availability-card">
+        <div class="availability-info">
+            {% if election.status == 'OPEN' %}
+                {% if has_voted %}
+                    <h3 class="availability-title" style="color: #166534;">✓ Your Vote Has Been Recorded</h3>
+                    <p class="availability-desc">You have already submitted your ballot for this election. Your vote is sealed in the blockchain.</p>
+                {% elif is_eligible %}
+                    <h3 class="availability-title" style="color: #4f46e5;">Voting is Open</h3>
+                    <p class="availability-desc">You are registered as an eligible voter for this election. Proceed to verify your identity and cast your ballot.</p>
+                {% else %}
+                    <h3 class="availability-title" style="color: #92400e;">Eligibility Required</h3>
+                    <p class="availability-desc">You are not registered on the eligibility roll for this election.</p>
+                {% endif %}
+            {% elif election.status == 'DRAFT' %}
+                <h3 class="availability-title" style="color: #92400e;">Upcoming Election (DRAFT)</h3>
+                <p class="availability-desc">Voting has not yet opened for this election. Candidates and positions are currently being prepared.</p>
+            {% elif election.status == 'CLOSED' %}
+                <h3 class="availability-title" style="color: #991b1b;">Election Closed</h3>
+                {% if election.is_published %}
+                    <p class="availability-desc">Official results have been verified and certified on the blockchain.</p>
+                {% else %}
+                    <p class="availability-desc">Voting has ended. Official tallies are currently being cryptographically verified by election authorities.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div>
+            {% if election.status == 'OPEN' and is_eligible and not has_voted %}
+                <a href="/elections/{{ election.id }}/vote/" class="btn-action btn-primary" style="font-size: 14px; padding: 10px 20px;">
+                    Cast Your Ballot &rarr;
+                </a>
+            {% elif election.status == 'CLOSED' and election.is_published %}
+                <a href="/show-result/?election_id={{ election.id }}" class="btn-action btn-secondary">
+                    View Certified Results
+                </a>
+            {% elif election.status == 'OPEN' and election.live_progress_enabled %}
+                <a href="/show-result/?election_id={{ election.id }}" class="btn-action btn-secondary">
+                    Live Election Progress
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Positions & Candidates Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 16px 0; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h2 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0;">Election Positions & Contenders</h2>
+            <p style="font-size: 13px; color: #64748b; margin: 2px 0 0 0;">Configured offices, candidate registrations, and contest status.</p>
+        </div>
+        {% if can_manage and election.status == 'DRAFT' %}
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('modal-add-position').style.display='flex'">
+                + Add Position
+            </button>
+        {% endif %}
+    </div>
+
+    <!-- Positions & Candidates Overview -->
+    {% if positions %}
+        {% for pos_data in positions %}
+        <div class="position-section" style="margin-bottom: 24px; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                <div>
+                    <h3 class="position-heading" style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;">{{ pos_data.position.title }}</h3>
+                    <p class="position-subheading" style="margin: 4px 0 0 0; font-size: 13px; color: #64748b;">
+                        Maximum selections allowed: <strong>{{ pos_data.position.max_votes_allowed }}</strong>
+                    </p>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    {% if election.status == 'DRAFT' %}
+                        {% if can_manage %}
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="openAddCandidateModal('{{ pos_data.position.id }}', '{{ pos_data.position.title|escapejs }}')">
+                                + Add Candidate
+                            </button>
+                        {% endif %}
+                        {% if is_candidate_account %}
+                            {% if pos_data.position.id in user_candidacy_position_ids %}
+                                <span class="badge badge-success" style="font-size: 12px; padding: 4px 10px;">&#10003; Registered as Candidate</span>
+                            {% else %}
+                                <button type="button" class="btn btn-primary btn-sm" onclick="openParticipateModal('{{ pos_data.position.id }}', '{{ pos_data.position.title|escapejs }}')">
+                                    Participate as Candidate
+                                </button>
+                            {% endif %}
+                        {% endif %}
+                    {% elif election.status == 'OPEN' %}
+                        <span style="font-size: 12px; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-weight: 500;">
+                            Candidate registration closed &mdash; election is live
+                        </span>
+                    {% else %}
+                        <span style="font-size: 12px; color: #64748b; background: #f1f5f9; padding: 4px 10px; border-radius: 6px; font-weight: 500;">
+                            Registration closed
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if pos_data.candidates %}
+                <div class="candidates-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;">
+                    {% for cand in pos_data.candidates %}
+                    <div class="candidate-card-summary" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+                        <div style="width: 54px; height: 54px; border-radius: 50%; background: #e0e7ff; color: #3730a3; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; margin-bottom: 8px;">
+                            {{ cand.name|slice:":1"|upper }}
+                        </div>
+                        <h4 class="cand-name" style="margin: 0 0 2px 0; font-size: 14px; font-weight: 600; color: #0f172a;">{{ cand.name }}</h4>
+                        {% if cand.affiliation %}
+                            <span style="font-size: 11px; color: #64748b; font-weight: 500; margin-bottom: 4px;">{{ cand.affiliation }}</span>
+                        {% endif %}
+                        <span class="badge badge-neutral" style="font-size: 10px; margin-top: 4px;">Candidate #{{ cand.id }}</span>
+                        {% if cand.bio %}
+                            <p class="cand-bio" style="font-size: 12px; color: #64748b; margin: 8px 0 0 0; line-height: 1.4;">{{ cand.bio|truncatewords:15 }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p style="font-size: 13px; color: #94a3b8; margin: 0; padding: 12px 0;">No candidates currently registered for this position.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="position-section" style="text-align: center; color: #94a3b8; padding: 32px 20px; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 10px;">
+            <p style="margin: 0 0 12px 0; font-size: 14px;">No positions have been configured for this election yet.</p>
+            {% if can_manage and election.status == 'DRAFT' %}
+                <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('modal-add-position').style.display='flex'">
+                    + Add First Position
+                </button>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- MODAL: Add Position (Admin only) -->
+<div id="modal-add-position" style="position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 480px; width: 100%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); border: 1px solid #e2e8f0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;">Add Position</h3>
+            <button type="button" onclick="document.getElementById('modal-add-position').style.display='none'" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+        </div>
+        <form method="POST" action="/positions/create/">
+            {% csrf_token %}
+            <input type="hidden" name="election_id" value="{{ election.id }}">
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Position Title <span style="color: #ef4444;">*</span></label>
+                <input type="text" name="title" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="e.g. President, Vice President, Treasurer" required>
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Maximum selections allowed</label>
+                <input type="number" name="max_votes_allowed" value="1" min="1" max="10" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-add-position').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Add Position</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: Add Candidate (Admin only) -->
+<div id="modal-add-candidate" style="position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); border: 1px solid #e2e8f0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;">Add Candidate</h3>
+            <button type="button" onclick="document.getElementById('modal-add-candidate').style.display='none'" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+        </div>
+        <form method="POST" action="/candidates/create/">
+            {% csrf_token %}
+            <input type="hidden" name="position_id" id="add-cand-position-id" value="">
+            <div style="margin-bottom: 12px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; font-size: 13px; color: #475569;">
+                Position: <strong id="add-cand-position-title" style="color: #0f172a;"></strong>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Candidate User Account</label>
+                <select name="user_id" id="add-cand-user-select" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;" onchange="onCandidateUserSelected(this)">
+                    <option value="">Select candidate user account...</option>
+                    {% for u in candidate_users %}
+                        <option value="{{ u.id }}" data-fullname="{{ u.get_full_name|default:u.username }}">{{ u.username }} ({{ u.email }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Display Name <span style="color: #ef4444;">*</span></label>
+                <input type="text" name="name" id="add-cand-name" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="Full display name" required>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Affiliation / Department</label>
+                <input type="text" name="affiliation" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="e.g. Independent, Computer Science">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Bio / Campaign Statement</label>
+                <textarea name="bio" rows="2" class="form-input" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 13px;" placeholder="Short statement..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-add-candidate').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save Candidate</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: Candidate Self-Registration (Participate) -->
+<div id="modal-participate" style="position: fixed; inset: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 16px;">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 500px; width: 100%; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15); border: 1px solid #e2e8f0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;">Register as Candidate</h3>
+            <button type="button" onclick="document.getElementById('modal-participate').style.display='none'" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
+        </div>
+        <form method="POST" action="/elections/{{ election.id }}/participate/">
+            {% csrf_token %}
+            <input type="hidden" name="position_id" id="part-position-id" value="">
+            <div style="margin-bottom: 12px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 13px; color: #166534;">
+                Contesting for: <strong id="part-position-title" style="color: #15803d;"></strong>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Candidate Name</label>
+                <input type="text" name="name" value="{{ user.get_full_name|default:user.username }}" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+            </div>
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Affiliation / Slate</label>
+                <input type="text" name="affiliation" class="form-input" style="width: 100%; height: 38px; padding: 0 10px; border: 1px solid #cbd5e1; border-radius: 6px;" placeholder="e.g. Independent, Computer Science League">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Candidate Statement</label>
+                <textarea name="bio" rows="3" class="form-input" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 13px;" placeholder="Describe your background and platform goals..."></textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal-participate').style.display='none'">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Submit Candidacy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddCandidateModal(posId, posTitle) {
+    document.getElementById('add-cand-position-id').value = posId;
+    document.getElementById('add-cand-position-title').innerText = posTitle;
+    document.getElementById('modal-add-candidate').style.display = 'flex';
+}
+function onCandidateUserSelected(selectElem) {
+    var opt = selectElem.options[selectElem.selectedIndex];
+    var fullname = opt.getAttribute('data-fullname');
+    if (fullname) {
+        document.getElementById('add-cand-name').value = fullname;
+    }
+}
+function openParticipateModal(posId, posTitle) {
+    document.getElementById('part-position-id').value = posId;
+    document.getElementById('part-position-title').innerText = posTitle;
+    document.getElementById('modal-participate').style.display = 'flex';
+}
+</script>
+{% endblock %}

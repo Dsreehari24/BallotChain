@@ -1,55 +1,70 @@
+/**
+ * BallotChain Voter Portal Entry Styling
+ * Updated with institutional design tokens: Navy #0F172A, Indigo #4F46E5, Slate #64748B
+ */
+
 .authentication {
-    margin: auto;
+    margin: 40px auto;
+    max-width: 480px;
+    width: 100%;
+    padding: 32px 24px;
+    background: #ffffff;
+    border: 1px solid var(--bc-slate-200);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
     display: flex;
     flex-direction: column;
+    text-align: center;
 }
 
 .authentication > span {
-    animation: slide-fade-in 1s ease-out;
-    color: #af3700;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--bc-navy);
+    margin-bottom: 8px;
 }
 
 .authentication > .input-section {
-    margin: auto;
+    margin: 16px auto 0 auto;
     display: flex;
-    margin-top: 10px;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+    flex-wrap: wrap;
+    justify-content: center;
 }
 
-.authentication > .input-section > .input-text{
-    opacity: 0;
-    padding: 5px;
-
-    background: rgba(255, 255, 255, 0.3);
-    color: #af3700;
-    border-color: #ff5100;
-    border-radius: 3px;
-
-    transition: all 0.3s linear;
-    animation: slide-fade-in 1s ease-out 0.2s forwards;
+.authentication > .input-section > .input-text {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 14px;
+    font-size: 14px;
+    background: #ffffff;
+    color: var(--bc-navy);
+    border: 1px solid var(--bc-slate-300);
+    border-radius: var(--radius-md);
+    outline: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
-.authentication > .input-section > .input-text:focus,
-.authentication > .input-section > .input-text:hover {
-    box-shadow: 0 0 12px #ff5100;
-    border-color: #ff5100;
-    border-radius: 3px;
+.authentication > .input-section > .input-text:focus {
+    border-color: var(--bc-blue);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
-.authentication > .input-section > .submit{
-    opacity: 0;
-    background: linear-gradient( #ff5100, #af3700 );
-    color: white;
-    border: none;
-    padding: 8px 40px;
-    border-radius: 3px;
-
-    margin-left: 20px;
+.authentication > .input-section > .submit {
+    background-color: var(--bc-blue);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid var(--bc-blue);
+    padding: 10px 24px;
+    border-radius: var(--radius-md);
     cursor: pointer;
-
-    transition: all 0.3s linear;
-    animation: slide-fade-in 1s ease-out 0.4s forwards;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
 .authentication > .input-section > .submit:hover {
-    box-shadow: 0 0 16px #ff5100;
+    background-color: var(--bc-blue-hover);
+    border-color: var(--bc-blue-hover);
 }

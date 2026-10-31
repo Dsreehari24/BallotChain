@@ -1,72 +1,72 @@
-$(document).ready(function(){
+/**
+ * BallotChain Voter Portal Authentication Script
+ * Updated with enterprise generic terminology and clean notifications.
+ */
+
+$(document).ready(function() {
     hide_loading();
     showAlert(
-        'Please Enter your Aadhar Card Number to Authenticate yourself in order to cast your pricelsess vote.',
-        'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)');
-    setTimeout(function(){
+        'Enter your Voter ID Number to authenticate and view eligible elections.',
+        'rgba(79, 70, 229, 0.08)', '#4f46e5');
+    setTimeout(function() {
         $('.loading-div').css({
-            'height': 'calc(100vh - 50px)',
-            'top': '50px',
+            'height': '100vh',
+            'top': '0',
         });
     }, 1000);
-})
+});
 
-// Aadhar Validation on input
-$('#aadhar').on('input',function(event){
-    if($('#aadhar').val().length>12){
+// Voter ID / UID Validation on input
+$('#aadhar').on('input', function(event) {
+    if ($('#aadhar').val().length > 12) {
         $('#aadhar').val(aadhar);
     }
-    if( $.isNumeric( $('#aadhar').val() ) ){
+    if ($.isNumeric($('#aadhar').val())) {
         aadhar = $('#aadhar').val();
-    }
-    else{
-        if($('#aadhar').val().length>0){
+    } else {
+        if ($('#aadhar').val().length > 0) {
             $('#aadhar').val(aadhar);
         }
     }
 });
 
-// Authenticate aadhar no after button click
+// Authenticate Voter ID after button click
 function submit_aadhar() {
-    
-    show_loading('Please wait, you are being authenticated.');
-    $.ajax(
-        {
-            type:"POST",
-            url: "/authentication/",
-            data: {'aadhar_no': $('#aadhar').val()},
-            success: function( data )
-            {
-                if(data.success){
-                    candidate_details_json = data.details;
+    show_loading('Please wait, authenticating voter credentials...');
+    $.ajax({
+        type: "POST",
+        url: "/authentication/",
+        data: {'aadhar_no': $('#aadhar').val()},
+        success: function(data) {
+            if (data.success) {
+                candidate_details_json = data.details;
 
+                showAlert(
+                    'Successfully Authenticated. Proceed to voter verification.',
+                    'rgba(15, 118, 110, 0.12)', '#0f766e');
+                setTimeout(function() {
                     showAlert(
-                        'Successfully Authenticated, Vote Now!',
-                        'rgba(136, 255, 156, 0.3)', 'rgb(0, 128, 0)');
-                    setTimeout( function(){
-                        showAlert(
-                            'Please verify an Email-ID, Private key will be sent to this Email-ID.',
-                            'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)', null);
-                    }, 5000);
-                    
-                    $('.main-content').html(data.html);
-                    hide_loading();
-                    showShortDetails();
-                }
+                        'Please verify your registered Email-ID to receive the one-time voting token.',
+                        'rgba(79, 70, 229, 0.08)', '#4f46e5', null);
+                }, 4000);
 
-                else {
-                    showAlert(data.error,
-                        'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
-                    hide_loading();
-                }
+                $('.main-content').html(data.html);
+                hide_loading();
+                showShortDetails();
+            } else {
+                showAlert(data.error,
+                    'rgba(220, 38, 38, 0.12)', '#dc2626', 'vibrate');
+                hide_loading();
             }
         }
-    );
+    });
 }
 
 // Show short Details at top right corner after authentication
 function showShortDetails() {
-    $('.basic-details').html(candidate_details_json.uuid+' ('+candidate_details_json.name+')');
-    $('.profile-pic').first().attr('src', candidate_details_json.profile_pic);
-    $('.short-details').css('display', 'flex');
+    if (candidate_details_json && candidate_details_json.uuid) {
+        $('.basic-details').html(candidate_details_json.uuid + ' (' + candidate_details_json.name + ')');
+        $('.profile-pic').first().attr('src', candidate_details_json.profile_pic);
+        $('.short-details').css('display', 'flex');
+    }
 }

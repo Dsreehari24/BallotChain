@@ -1,0 +1,703 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}BallotChain — {{ persona_label }} Dashboard{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'dist/island.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/dashboard.css' %}">
+<script type="module" src="{% static 'dist/island.js' %}"></script>
+{% endblock %}
+
+{% block main_content %}
+
+<!-- Restrained React Bits Grid Motion Background Island -->
+<div id="ballotchain-grid-motion-root" aria-hidden="true"></div>
+
+<div class="dashboard-shell">
+
+    <!-- Header Card -->
+    <header class="dashboard-header-card">
+        <div class="dashboard-header-top">
+            <div class="dashboard-title-area">
+                <div class="dashboard-title-row">
+                    <h1 class="dashboard-title">{{ persona_label }} Dashboard</h1>
+                    <span class="persona-tag {{ persona_css_class }}">{{ persona_label }}</span>
+                </div>
+                <p class="dashboard-subtitle">
+                    {% if account_persona == 'PLATFORM_ADMIN' %}
+                        Global administrative authority • System governance & multi-tenant oversight
+                    {% elif account_persona == 'ORGANIZATION_ADMIN' %}
+                        Tenant administration • Scope: <strong>{{ tenant_org.name|default:"Unassigned Organization" }}</strong>
+                    {% elif account_persona == 'ELECTION_OFFICIAL' %}
+                        Operational election management • Scope: <strong>{{ tenant_org.name|default:"Unassigned Organization" }}</strong>
+                    {% elif account_persona == 'AUDITOR' %}
+                        Cryptographic audit & verification • Scope: <strong>{{ tenant_org.name|default:"Unassigned Organization" }}</strong>
+                    {% elif account_persona == 'CANDIDATE' %}
+                        Candidate participation & voter capabilities • <strong>{{ request.user.username }}</strong>
+                    {% else %}
+                        Voter portal & verifiable participation • <strong>{{ request.user.username }}</strong>
+                    {% endif %}
+                </p>
+            </div>
+
+            <div class="dashboard-header-actions">
+                <a href="/blockchain/" class="btn-action btn-secondary" title="View shared cryptographic ledger">
+                    ⛓ Shared Ledger
+                </a>
+                {% if account_persona != 'PLATFORM_ADMIN' and account_persona != 'ORGANIZATION_ADMIN' and account_persona != 'AUDITOR' and account_persona != 'ELECTION_OFFICIAL' %}
+                <a href="/" class="btn-action btn-secondary" title="Return to voter portal">
+                    🗳 Voter Portal
+                </a>
+                {% endif %}
+                {% if account_persona == 'PLATFORM_ADMIN' or account_persona == 'ORGANIZATION_ADMIN' %}
+                <a href="/elections/create/" class="btn-action btn-primary" title="Create a new election">
+                    + New Election
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if account_persona == 'AUDITOR' %}
+        <div class="dashboard-notice-banner auditor-notice" role="alert">
+            <span class="banner-icon">🛡️</span>
+            <div>
+                <strong>Auditor Verification Mode:</strong> Strictly read-only access enabled. Mutation, mining, and lifecycle controls are disabled to preserve audit integrity.
+            </div>
+        </div>
+        {% elif account_persona == 'ELECTION_OFFICIAL' %}
+        <div class="dashboard-notice-banner official-notice" role="alert">
+            <span class="banner-icon">📋</span>
+            <div>
+                <strong>Operational Mode:</strong> Candidate roster, position setup, and batch tools are accessible. Election lifecycle transitions (Start, End, Publish Results) are restricted to Organization Administrators.
+            </div>
+        </div>
+        {% elif account_persona == 'CANDIDATE' %}
+        <div class="dashboard-notice-banner candidate-notice" role="note">
+            <span class="banner-icon">👤</span>
+            <div>
+                <strong>Candidate Status Active:</strong> You are participating as an authorized election candidate. You retain full eligibility to vote in open elections.
+            </div>
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- PERSONA 1: PLATFORM ADMIN DASHBOARD -->
+    <!-- ========================================================================= -->
+    {% if account_persona == 'PLATFORM_ADMIN' %}
+
+        <!-- Stats Grid -->
+        <section class="dashboard-stats-grid" aria-label="System Metrics">
+            <div class="stat-card">
+                <span class="stat-label">Organizations</span>
+                <span class="stat-value">{{ stats.total_organizations|default:"0" }}</span>
+                <span class="stat-desc">Configured tenant scopes</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Total Elections</span>
+                <span class="stat-value">{{ stats.total_elections|default:"0" }}</span>
+                <span class="stat-desc">Across all tenants</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Ledger Blocks</span>
+                <span class="stat-value">{{ stats.total_blocks|default:"0" }}</span>
+                <span class="stat-desc">Authoritative blockchain height</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Verified Votes</span>
+                <span class="stat-value">{{ stats.total_votes|default:"0" }}</span>
+                <span class="stat-desc">Total cryptographic ballots</span>
+            </div>
+        </section>
+
+        <div class="dashboard-grid-layout">
+            <!-- Elections Overview -->
+            <section class="dashboard-card" aria-labelledby="heading-platform-elections">
+                <div class="card-header-row">
+                    <h2 id="heading-platform-elections" class="card-heading">Global Elections Overview</h2>
+                    <div class="card-heading-actions">
+                        <a href="/elections/" class="btn-action btn-secondary btn-sm">All Elections</a>
+                        <a href="/elections/create/" class="btn-action btn-primary btn-sm">+ Create Election</a>
+                    </div>
+                </div>
+
+                {% if elections %}
+                    <div class="dashboard-table-container">
+                        <table class="dashboard-table" aria-label="Global Elections List">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Organization</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for elec in elections %}
+                                <tr>
+                                    <td><strong>{{ elec.title }}</strong></td>
+                                    <td>{{ elec.organization.name|default:"Global" }}</td>
+                                    <td>
+                                        <span class="status-pill {{ elec.status|lower }}">{{ elec.status }}</span>
+                                        {% if elec.is_published %}
+                                            <span class="status-pill open" style="margin-left: 4px; font-size: 11px;">Published</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                                            <a href="/elections/{{ elec.id }}/" class="btn-action btn-secondary btn-sm">View</a>
+                                            {% if elec.status == 'DRAFT' %}
+                                                <form method="post" action="/elections/{{ elec.id }}/start/" style="display: inline; margin: 0;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-action btn-primary btn-sm" onclick="return confirm('Are you sure you want to START this election? Voters will be able to cast ballots.');">Start</button>
+                                                </form>
+                                                <a href="/elections/{{ elec.id }}/edit/" class="btn-action btn-secondary btn-sm">Edit</a>
+                                            {% elif elec.status == 'OPEN' %}
+                                                <form method="post" action="/elections/{{ elec.id }}/end/" style="display: inline; margin: 0;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-action btn-secondary btn-sm" style="color: #dc2626; border-color: #fca5a5;" onclick="return confirm('Are you sure you want to END this election? Voting will be permanently stopped.');">End</button>
+                                                </form>
+                                                <a href="/elections/{{ elec.id }}/edit/" class="btn-action btn-secondary btn-sm">Edit</a>
+                                            {% elif elec.status == 'CLOSED' %}
+                                                {% if not elec.is_published %}
+                                                    <form method="post" action="/elections/{{ elec.id }}/publish/" style="display: inline; margin: 0;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn-action btn-primary btn-sm" onclick="return confirm('Are you sure you want to PUBLISH official results? This will verify cryptographic tallies and freeze results.');">Publish</button>
+                                                    </form>
+                                                {% else %}
+                                                    <a href="/show-result/?election_id={{ elec.id }}" class="btn-action btn-secondary btn-sm">Results</a>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">🗳️</div>
+                        <h3 class="empty-state-title">No elections are currently available.</h3>
+                        <p class="empty-state-text">No elections have been created in the platform yet.</p>
+                        <a href="/elections/create/" class="btn-action btn-primary btn-sm">+ Create First Election</a>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Organizations & Ledger Quick Cards -->
+            <div class="dashboard-single-layout">
+                <section class="dashboard-card" aria-labelledby="heading-platform-orgs">
+                    <div class="card-header-row">
+                        <h2 id="heading-platform-orgs" class="card-heading">Organizations</h2>
+                        <a href="/organizations/" class="btn-action btn-secondary btn-sm">Manage</a>
+                    </div>
+
+                    {% if organizations %}
+                        <div class="dashboard-table-container">
+                            <table class="dashboard-table" aria-label="Organizations List">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for org in organizations %}
+                                    <tr>
+                                        <td><strong>{{ org.name }}</strong></td>
+                                        <td><a href="/organizations/{{ org.id }}/" class="btn-action btn-secondary btn-sm">View</a></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state-box">
+                            <div class="empty-state-icon">🏢</div>
+                            <h3 class="empty-state-title">No organizations configured.</h3>
+                            <p class="empty-state-text">Get started by creating an organization tenant.</p>
+                            <a href="/organizations/create/" class="btn-action btn-primary btn-sm">+ Add Organization</a>
+                        </div>
+                    {% endif %}
+                </section>
+
+                <section class="dashboard-card" aria-labelledby="heading-platform-ledger">
+                    <div class="card-header-row">
+                        <h2 id="heading-platform-ledger" class="card-heading">Shared Ledger Explorer</h2>
+                        <a href="/blockchain/" class="btn-action btn-secondary btn-sm">Open Explorer</a>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+                        BallotChain's authoritative cryptographic ledger. All blocks, Merkle roots, and transactional proofs are publicly verifiable.
+                    </p>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <a href="/blockchain/" class="btn-action btn-secondary btn-sm">Browse 5,645+ Blocks</a>
+                        <a href="/blockchain/verify-chain/" class="btn-action btn-secondary btn-sm">Verify Full Chain</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    <!-- ========================================================================= -->
+    <!-- PERSONA 2: ORGANIZATION ADMIN DASHBOARD -->
+    <!-- ========================================================================= -->
+    {% elif account_persona == 'ORGANIZATION_ADMIN' %}
+
+        <!-- Tenant Stats Grid -->
+        <section class="dashboard-stats-grid" aria-label="Tenant Metrics">
+            <div class="stat-card">
+                <span class="stat-label">Tenant Elections</span>
+                <span class="stat-value">{{ stats.tenant_elections|default:"0" }}</span>
+                <span class="stat-desc">Scoped to {{ tenant_org.name|default:"Organization" }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Configured Positions</span>
+                <span class="stat-value">{{ stats.tenant_positions|default:"0" }}</span>
+                <span class="stat-desc">Offices up for ballot</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Registered Candidates</span>
+                <span class="stat-value">{{ stats.tenant_candidates|default:"0" }}</span>
+                <span class="stat-desc">Approved nominees</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Ballot Batches</span>
+                <span class="stat-value">{{ stats.tenant_batches|default:"0" }}</span>
+                <span class="stat-desc">Batches in this organization</span>
+            </div>
+        </section>
+
+        <div class="dashboard-grid-layout">
+            <!-- Organization Elections -->
+            <section class="dashboard-card" aria-labelledby="heading-org-elections">
+                <div class="card-header-row">
+                    <h2 id="heading-org-elections" class="card-heading">Organization Elections</h2>
+                    <div class="card-heading-actions">
+                        <a href="/elections/create/" class="btn-action btn-primary btn-sm">+ Create Election</a>
+                    </div>
+                </div>
+
+                {% if elections %}
+                    <div class="dashboard-table-container">
+                        <table class="dashboard-table" aria-label="Organization Elections List">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Lifecycle Controls</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for elec in elections %}
+                                <tr>
+                                    <td><strong>{{ elec.title }}</strong></td>
+                                    <td>
+                                        <span class="status-pill {{ elec.status|lower }}">{{ elec.status }}</span>
+                                        {% if elec.is_published %}
+                                            <span class="status-pill open" style="margin-left: 4px; font-size: 11px;">Published</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                                            <a href="/elections/{{ elec.id }}/" class="btn-action btn-secondary btn-sm">Manage</a>
+                                            {% if elec.status == 'DRAFT' %}
+                                                <form method="post" action="/elections/{{ elec.id }}/start/" style="display: inline; margin: 0;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-action btn-primary btn-sm" onclick="return confirm('Start this election for {{ tenant_org.name }}?');">Start</button>
+                                                </form>
+                                                <a href="/elections/{{ elec.id }}/edit/" class="btn-action btn-secondary btn-sm">Edit</a>
+                                            {% elif elec.status == 'OPEN' %}
+                                                <form method="post" action="/elections/{{ elec.id }}/end/" style="display: inline; margin: 0;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-action btn-secondary btn-sm" style="color: #dc2626; border-color: #fca5a5;" onclick="return confirm('End this election for {{ tenant_org.name }}?');">End</button>
+                                                </form>
+                                                <a href="/elections/{{ elec.id }}/edit/" class="btn-action btn-secondary btn-sm">Edit</a>
+                                            {% elif elec.status == 'CLOSED' %}
+                                                {% if not elec.is_published %}
+                                                    <form method="post" action="/elections/{{ elec.id }}/publish/" style="display: inline; margin: 0;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn-action btn-primary btn-sm" onclick="return confirm('Publish official results for {{ tenant_org.name }}?');">Publish</button>
+                                                    </form>
+                                                {% else %}
+                                                    <a href="/show-result/?election_id={{ elec.id }}" class="btn-action btn-secondary btn-sm">Results</a>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">🗳️</div>
+                        <h3 class="empty-state-title">No elections are currently available.</h3>
+                        <p class="empty-state-text">No elections have been scheduled for {{ tenant_org.name|default:"your organization" }}.</p>
+                        <a href="/elections/create/" class="btn-action btn-primary btn-sm">+ Create First Election</a>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Tenant Management Quick Actions -->
+            <div class="dashboard-single-layout">
+                <section class="dashboard-card" aria-labelledby="heading-org-tools">
+                    <h2 id="heading-org-tools" class="card-heading">Organization Governance</h2>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <a href="/positions/" class="btn-action btn-secondary btn-sm">Manage Positions</a>
+                        <a href="/candidates/" class="btn-action btn-secondary btn-sm">Manage Candidates</a>
+                        <a href="/eligibility/" class="btn-action btn-secondary btn-sm">Voter Eligibility Rolls</a>
+                        <a href="/ballots/" class="btn-action btn-secondary btn-sm">Ballot Batches</a>
+                        <a href="/show-result" class="btn-action btn-secondary btn-sm">Election Results</a>
+                        <a href="/blockchain/" class="btn-action btn-secondary btn-sm">Shared Ledger Explorer</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    <!-- ========================================================================= -->
+    <!-- PERSONA 3: ELECTION OFFICIAL DASHBOARD -->
+    <!-- ========================================================================= -->
+    {% elif account_persona == 'ELECTION_OFFICIAL' %}
+
+        <!-- Operational Stats -->
+        <section class="dashboard-stats-grid" aria-label="Operational Metrics">
+            <div class="stat-card">
+                <span class="stat-label">Assigned Elections</span>
+                <span class="stat-value">{{ stats.assigned_elections|default:"0" }}</span>
+                <span class="stat-desc">In operational scope</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Positions</span>
+                <span class="stat-value">{{ stats.assigned_positions|default:"0" }}</span>
+                <span class="stat-desc">Operational positions</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Candidate Roster</span>
+                <span class="stat-value">{{ stats.assigned_candidates|default:"0" }}</span>
+                <span class="stat-desc">Registered candidates</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Ballot Batches</span>
+                <span class="stat-value">{{ stats.operational_batches|default:"0" }}</span>
+                <span class="stat-desc">Batches for mining/processing</span>
+            </div>
+        </section>
+
+        <div class="dashboard-grid-layout">
+            <!-- Assigned Elections -->
+            <section class="dashboard-card" aria-labelledby="heading-official-elections">
+                <div class="card-header-row">
+                    <h2 id="heading-official-elections" class="card-heading">Assigned Elections</h2>
+                    <span style="font-size: 12px; color: var(--text-muted);">Operational Oversight</span>
+                </div>
+
+                {% if elections %}
+                    <div class="dashboard-table-container">
+                        <table class="dashboard-table" aria-label="Operational Elections List">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Operations</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for elec in elections %}
+                                <tr>
+                                    <td><strong>{{ elec.title }}</strong></td>
+                                    <td><span class="status-pill {{ elec.status|lower }}">{{ elec.status }}</span></td>
+                                    <td>
+                                        <a href="/elections/{{ elec.id }}/" class="btn-action btn-secondary btn-sm">Inspect</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">📋</div>
+                        <h3 class="empty-state-title">No elections are currently available.</h3>
+                        <p class="empty-state-text">No elections are currently assigned to your operational scope.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Operational Tools (Strictly NO start/end/publish) -->
+            <div class="dashboard-single-layout">
+                <section class="dashboard-card" aria-labelledby="heading-official-tools">
+                    <h2 id="heading-official-tools" class="card-heading">Operational Tools</h2>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <a href="/candidates/" class="btn-action btn-secondary btn-sm">Candidate Roster</a>
+                        <a href="/positions/" class="btn-action btn-secondary btn-sm">Position Setup</a>
+                        <a href="/eligibility/" class="btn-action btn-secondary btn-sm">Voter Eligibility Rolls</a>
+                        <a href="/ballots/" class="btn-action btn-secondary btn-sm">Ballot Batches</a>
+                        <a href="/mine-block" class="btn-action btn-secondary btn-sm">Mine Block / Batches</a>
+                        <a href="/blockchain/" class="btn-action btn-secondary btn-sm">Shared Ledger Explorer</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    <!-- ========================================================================= -->
+    <!-- PERSONA 4: AUDITOR DASHBOARD -->
+    <!-- ========================================================================= -->
+    {% elif account_persona == 'AUDITOR' %}
+
+        <!-- Audit Stats -->
+        <section class="dashboard-stats-grid" aria-label="Audit Metrics">
+            <div class="stat-card">
+                <span class="stat-label">Auditable Elections</span>
+                <span class="stat-value">{{ stats.audited_elections|default:"0" }}</span>
+                <span class="stat-desc">In tenant scope</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Audit Receipts</span>
+                <span class="stat-value">{{ stats.audit_records_count|default:"0" }}</span>
+                <span class="stat-desc">Independent audit records</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Verification Mode</span>
+                <span class="stat-value" style="font-size: 20px; color: #047857;">READ-ONLY</span>
+                <span class="stat-desc">Mutations disabled</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Chain Integrity</span>
+                <span class="stat-value" style="font-size: 20px; color: #4338ca;">VERIFIED</span>
+                <span class="stat-desc">5,645 authoritative blocks</span>
+            </div>
+        </section>
+
+        <div class="dashboard-grid-layout">
+            <!-- Auditable Elections -->
+            <section class="dashboard-card" aria-labelledby="heading-auditor-elections">
+                <div class="card-header-row">
+                    <h2 id="heading-auditor-elections" class="card-heading">Auditable Elections</h2>
+                    <span style="font-size: 12px; color: var(--text-muted);">Independent Audit Access</span>
+                </div>
+
+                {% if elections %}
+                    <div class="dashboard-table-container">
+                        <table class="dashboard-table" aria-label="Auditable Elections List">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Title</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Verification</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for elec in elections %}
+                                <tr>
+                                    <td><strong>{{ elec.title }}</strong></td>
+                                    <td><span class="status-pill {{ elec.status|lower }}">{{ elec.status }}</span></td>
+                                    <td>
+                                        <a href="/show-result/?election_id={{ elec.id }}" class="btn-action btn-secondary btn-sm">Audit Results</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">🛡️</div>
+                        <h3 class="empty-state-title">No elections are currently available.</h3>
+                        <p class="empty-state-text">No elections are currently available for audit in your assigned scope.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Verification Tools (Strictly Read-Only) -->
+            <div class="dashboard-single-layout">
+                <section class="dashboard-card" aria-labelledby="heading-auditor-tools">
+                    <h2 id="heading-auditor-tools" class="card-heading">Verification Tools</h2>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        <a href="/blockchain/verify-chain/" class="btn-action btn-secondary btn-sm">Cryptographic Chain Verification</a>
+                        <a href="/blockchain/" class="btn-action btn-secondary btn-sm">Shared Ledger Explorer</a>
+                        <a href="/show-result" class="btn-action btn-secondary btn-sm">Published Tally Inspection</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    <!-- ========================================================================= -->
+    <!-- PERSONA 5: CANDIDATE DASHBOARD -->
+    <!-- ========================================================================= -->
+    {% elif account_persona == 'CANDIDATE' %}
+
+        <div class="dashboard-grid-layout">
+            <!-- Candidate Participation Details -->
+            <section class="dashboard-card" aria-labelledby="heading-candidate-info">
+                <div class="card-header-row">
+                    <h2 id="heading-candidate-info" class="card-heading">Candidate Participation</h2>
+                    <span class="persona-tag candidate">Nominee</span>
+                </div>
+
+                {% if candidacies %}
+                    <div class="dashboard-table-container">
+                        <table class="dashboard-table" aria-label="Candidacies List">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Candidate</th>
+                                    <th scope="col">Position</th>
+                                    <th scope="col">Election</th>
+                                    <th scope="col">Organization</th>
+                                    <th scope="col">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cand in candidacies %}
+                                <tr>
+                                    <td><strong>{{ cand.name }}</strong></td>
+                                    <td>{{ cand.position.title }}</td>
+                                    <td>{{ cand.position.election.title }}</td>
+                                    <td>{{ cand.position.election.organization.name|default:"General" }}</td>
+                                    <td><span class="status-pill open">Approved</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">👤</div>
+                        <h3 class="empty-state-title">No active candidacies found.</h3>
+                        <p class="empty-state-text">Your account is not registered for any upcoming election positions.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Voter Participation Card (Candidates can still vote!) -->
+            <section class="dashboard-card" aria-labelledby="heading-candidate-voter-card">
+                <div class="card-header-row">
+                    <h2 id="heading-candidate-voter-card" class="card-heading">Voter Participation</h2>
+                    <span class="persona-tag voter">Voter</span>
+                </div>
+                <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+                    As a verified member, you retain full rights to cast your ballot in eligible elections.
+                </p>
+
+                {% if eligible_elections %}
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                        {% for elec in eligible_elections %}
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,0.02); border-radius: var(--radius-sm);">
+                            <span style="font-size: 13px; font-weight: 600;">{{ elec.title }}</span>
+                            <div style="display: flex; gap: 6px; align-items: center;">
+                                <a href="/elections/{{ elec.id }}/" class="btn-action btn-secondary btn-sm">Overview</a>
+                                {% if elec.status == 'OPEN' %}
+                                    <a href="/elections/{{ elec.id }}/vote/" class="btn-action btn-primary btn-sm">Cast Vote</a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">🗳️</div>
+                        <h3 class="empty-state-title">No elections are currently available.</h3>
+                        <p class="empty-state-text">There are no open elections currently accepting ballots.</p>
+                        <a href="/" class="btn-action btn-secondary btn-sm">Go to Voter Portal</a>
+                    </div>
+                {% endif %}
+
+                <div style="margin-top: 8px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 12px;">
+                    <a href="/blockchain/" class="btn-action btn-secondary btn-sm" style="width: 100%;">Inspect Shared Ledger</a>
+                </div>
+            </section>
+        </div>
+
+    <!-- ========================================================================= -->
+    <!-- PERSONA 6: USER / VOTER DASHBOARD -->
+    <!-- ========================================================================= -->
+    {% else %}
+
+        <div class="dashboard-grid-layout">
+            <!-- Eligible Elections -->
+            <section class="dashboard-card" aria-labelledby="heading-voter-elections">
+                <div class="card-header-row">
+                    <h2 id="heading-voter-elections" class="card-heading">Eligible Elections</h2>
+                    <span style="font-size: 12px; color: var(--text-muted);">Active Ballots</span>
+                </div>
+
+                {% if eligible_elections %}
+                    <div class="dashboard-table-container">
+                        <table class="dashboard-table" aria-label="Available Elections">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Election</th>
+                                    <th scope="col">Organization</th>
+                                    <th scope="col">Status</th>
+                                    <th scope="col">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for elec in eligible_elections %}
+                                <tr>
+                                    <td><strong>{{ elec.title }}</strong></td>
+                                    <td>{{ elec.organization.name|default:"General" }}</td>
+                                    <td><span class="status-pill {{ elec.status|lower }}">{{ elec.status }}</span></td>
+                                    <td>
+                                        <div style="display: flex; gap: 6px; align-items: center;">
+                                            <a href="/elections/{{ elec.id }}/" class="btn-action btn-secondary btn-sm">View</a>
+                                            {% if elec.status == 'OPEN' %}
+                                                <a href="/elections/{{ elec.id }}/vote/" class="btn-action btn-primary btn-sm">Vote</a>
+                                            {% elif elec.status == 'CLOSED' and elec.is_published %}
+                                                <a href="/show-result/?election_id={{ elec.id }}" class="btn-action btn-secondary btn-sm">Results</a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state-box">
+                        <div class="empty-state-icon">🗳️</div>
+                        <h3 class="empty-state-title">No elections are currently available.</h3>
+                        <p class="empty-state-text">There are no active elections open for voting at this time.</p>
+                        <a href="/" class="btn-action btn-secondary btn-sm">Open Voter Portal</a>
+                    </div>
+                {% endif %}
+            </section>
+
+            <!-- Voter Profile & Participation Card -->
+            <div class="dashboard-single-layout">
+                <section class="dashboard-card" aria-labelledby="heading-voter-profile">
+                    <h2 id="heading-voter-profile" class="card-heading">Voter Account</h2>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                        <div>
+                            <span style="color: var(--text-muted);">Username:</span>
+                            <strong>{{ request.user.username }}</strong>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Email:</span>
+                            <span>{{ request.user.email|default:"Not specified" }}</span>
+                        </div>
+                        <div>
+                            <span style="color: var(--text-muted);">Participation Status:</span>
+                            {% if has_voted %}
+                            <span class="status-pill open">Vote Recorded</span>
+                            {% else %}
+                            <span class="status-pill draft">No Ballot Cast Yet</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <a href="/" class="btn-action btn-primary btn-sm">Voter Portal</a>
+                        <a href="/show-result" class="btn-action btn-secondary btn-sm">View Published Results</a>
+                        <a href="/blockchain/" class="btn-action btn-secondary btn-sm">Shared Ledger Explorer</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

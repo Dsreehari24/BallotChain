@@ -138,7 +138,7 @@
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 10;
+    z-index: 50;
     display: none;
     padding-top: 70px;
 }
@@ -233,3 +233,72 @@
     
     box-shadow: 0 0 16px #ff0000;
 }
+
+/* React Slide Commit Ballot Submission Island */
+#ballotchain-slide-commit-island-root {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+#ballotchain-slide-commit-island-root * {
+    box-sizing: border-box;
+}
+
+#final-confirm[style*="display: none"] + #cancel-confirm {
+    margin-left: 0;
+}
+
+/* ==========================================================================
+   Phase 8 Test-6: Dedicated Step 5 Cryptographic Commit & Visual Constraints
+   ========================================================================== */
+
+@keyframes bc-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.ballotchain-spinner {
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+/* Strictly constrain all images within voting flow to prevent overflow or oversize graphics */
+.party-selection img,
+#step-3-review-view img,
+#step-4-key-view img,
+#step-5-commit-view img {
+    max-width: 100%;
+    height: auto;
+    box-sizing: border-box;
+}
+
+#review-candidate-logo,
+#step-5-candidate-logo {
+    width: 56px !important;
+    height: 56px !important;
+    max-width: 56px !important;
+    max-height: 56px !important;
+    min-width: 56px !important;
+    min-height: 56px !important;
+    border-radius: 50% !important;
+    object-fit: cover !important;
+    border: 2px solid #e2e8f0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Completely suppress legacy oversized unconstrained flip-card container */
+.all-done {
+    display: none !important;
+}
+
+/* Card responsive widths */
+.party-selection {
+    max-width: 720px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 20px auto;
+}
+

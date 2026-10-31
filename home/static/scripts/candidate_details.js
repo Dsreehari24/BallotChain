@@ -1,5 +1,5 @@
-var emailmsg1 = 'Please enter a valid Email-ID and verfiy it. Key will be sent to this Email-ID.';
-var emailmsg2 = 'Please verify your Email-ID. Key will be sent to this Email-ID.';
+var emailmsg1 = 'Please verify your institutional email address to proceed.';
+var emailmsg2 = 'Click "Send OTP" to receive your one-time verification code.';
 var valid_email_pattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
 
 $(document).ready(function(){
@@ -16,77 +16,36 @@ $(document).ready(function(){
         }
     }
 
-    // Email validation on input
-    $('#email-input').on('input', function(){
-        set_email_alert_msg();
-    })
-
-    // Show or hide input div on button click
-    $('#change-email').click(function(){
-
-        if( $(this).html() == 'Change' ){
-            $('#email-input').prop('disabled', false);
-            $('#email-input').removeClass('email-input');
-            $('#email-input').css({'color': 'black', 'text-align': 'left'});
-            $(this).html('Done');
-            
-            $('#send-otp').show();
-            $('#verified-badge').hide();
-            $('#vote-now').addClass('disabled');
-            $('.email-alert-msg').show();
-        }
-        else{
-            $('#email-input').prop('disabled', true);
-            $('#email-input').addClass('email-input');
-            $('#email-input').css('color', 'white');
-            $(this).html('Change');
-        }
-    });
-
-    // Send otp to email addredd on button click and display verification div
+    // Send OTP to email address on button click and display centered modal
     $('#send-otp').click(function(){
-
         if( valid_email_pattern.test($('#email-input').val()) ){
-        
-            if($('#change-email').html()=='Done'){
-                $('#email-input').prop('disabled', true);
-                $('#email-input').addClass('email-input');
-                $('#email-input').css('color', 'white');
-                $('#change-email').html('Change');
-            }
+            show_loading('Sending one-time verification code to your email...');
 
-            show_loading('Please wait, OTP is being sent to your email-id.')
+            $.ajax({
+                type: 'POST',
+                url: '/send-otp/',
+                data: {'email-id': $('#email-input').val()},
+                success: function(data){
+                    setTimeout(function(){
+                        hide_loading_without_reload();
+                    }, 800);
 
-            $.ajax(
-                {
-                    type:'GET',
-                    url: '/send-otp/',
-                    data: {'email-id': $('#email-input').val()},
-                    success: function(data){
- 
-                        setTimeout(function(){
-                            hide_loading_without_reload();
-                        }, 1000);
-
-                        if(data.success){
-                            
-                            $('.otp-div').removeClass('otp-verification-slide-to-bottom');
-                            $('.otp-div').addClass('otp-verification-slide-from-bottom');
-                            $('#otp-verfication-email').html($('#email-input').val());
-                            $('.otp-verification').show();
-                            $('.otp-div').show();
-                            showAlert('OTP send to ' + $('#email-input').val() + '.', 'rgba(136, 255, 156, 0.3)', 'rgb(0, 128, 0)');
-                        }
-                        else {
-                            showAlert(data.error, 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
-                        }
-
+                    if(data.success){
+                        $('#otp-verfication-email').html($('#email-input').val());
+                        document.dispatchEvent(new CustomEvent('ballotchain:otp-reset'));
+                        $('.otp-verification').css('display', 'flex');
+                        $('.otp-div').show();
+                        showAlert('OTP code sent to ' + $('#email-input').val(), 'rgba(136, 255, 156, 0.3)', 'rgb(0, 128, 0)');
+                    } else {
+                        showAlert(data.error || 'Failed to send OTP code.', 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
                     }
+                },
+                error: function(xhr){
+                    hide_loading_without_reload();
+                    showAlert('Failed to connect to authentication service.', 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
                 }
-            );
-
-        }
-        else {
+            });
+        } else {
             $('.email-alert-msg').removeClass('email-alert-msg-slide-fade-in');
             $('.email-alert-msg').addClass('boom');
             setTimeout(function(){
@@ -95,85 +54,69 @@ $(document).ready(function(){
         }
     });
 
-    // Verify OTP by entered OTP
+    // Verify OTP
     $('#verify').click(function(){
+        show_loading('Verifying your identity code...');
 
-        show_loading('Please wait, we are verifying your email-id.')
+        $.ajax({
+            type: 'POST',
+            url: '/verify-otp/',
+            data: {'otp-input': $('#otp-input').val()},
+            success: function(data){
+                setTimeout(function(){
+                    hide_loading_without_reload();
+                }, 1000);
 
-        $.ajax(
-            {
-                type:'GET',
-                url: '/verify-otp/',
-                data: {'otp-input': $('#otp-input').val()},
-                success: function(data){
+                if(data.success){
+                    $('.otp-verification').hide();
 
-                    setTimeout(function(){
-                        hide_loading_without_reload();
-                    }, 1500);
-
-                    if(data.success){
-
-                        $('.otp-div').removeClass('otp-verification-slide-from-bottom');
-                        $('.otp-div').addClass('otp-verification-slide-to-bottom');
-                        setTimeout(function(){
-                            $('.otp-verification').hide();
-                            $('.otp-div').hide();
-                        }, 500);
-
-                        $('#send-otp').hide();
-                        $('#verified-badge').css('display', 'inline');
-                        $('#email-input').css('text-align', 'right');
-                        $('#vote-now').removeClass('disabled');
-                        $('.email-alert-msg').hide();
-                        
-                        showAlert('Email Verfied.', 'rgba(136, 255, 156, 0.3)', 'rgb(0, 128, 0)');
-                    }
-                    else {
-                        showAlert('Wrong OTP.', 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
-                    }
-
+                    $('#send-otp').hide();
+                    $('#verified-badge').css('display', 'inline');
+                    $('#vote-now').removeClass('disabled');
+                    $('.email-alert-msg').hide();
+                    
+                    showAlert('Identity verified successfully.', 'rgba(136, 255, 156, 0.3)', 'rgb(0, 128, 0)');
+                } else {
+                    document.dispatchEvent(new CustomEvent('ballotchain:otp-error'));
+                    showAlert('Invalid or expired OTP code.', 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
                 }
+            },
+            error: function(xhr){
+                hide_loading_without_reload();
+                showAlert('Error verifying OTP code.', 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
             }
-        );
+        });
     });
 
-    // Cancel OTP verification and hide verification div
+    // Cancel OTP verification and hide verification modal
     $('#cancel-otp').click(function(){
-        $('.otp-div').removeClass('otp-verification-slide-from-bottom');
-        $('.otp-div').addClass('otp-verification-slide-to-bottom');
-        setTimeout(function(){
-            $('.otp-verification').hide();
-            $('.otp-div').hide();
-        }, 500);
+        $('.otp-verification').hide();
     });
 
+    // Proceed to ballot selection
     $('#vote-now').click(function(event){
+        show_loading('Initializing secure ballot session...');
 
-        show_loading('Please wait, Private Key is being sent your email-id.');
+        var currentElectionId = $('#current-election-id').val();
+        var url = '/get-parties/';
+        if (currentElectionId) {
+            url += '?election_id=' + encodeURIComponent(currentElectionId);
+        }
 
-        $.ajax(
-            {
-                type:'GET',
-                url: '/get-parties/',
-                data: 'None',
-                success: function(data){
-
-                    parties_list_json = data.parties;
-                    $('.main-content').html(data.html);
-
-                    if(data.private_key){
-                        // after voting UI loads, pre-fill the private key to avoid incorrect copy/paste
-                        setTimeout(function(){
-                            $('#private-key-input').val(data.private_key);
-                        }, 100);
-                    }
-
-                    hide_loading();
-
-                    showAlert('Make your choice. Remember you are going to select a new Representative.', 'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)');
-                }
+        $.ajax({
+            type: 'GET',
+            url: url,
+            success: function(data){
+                parties_list_json = data.parties;
+                $('.main-content').html(data.html);
+                hide_loading();
+                showAlert('Make your choice. Select your preferred candidate.', 'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)');
+            },
+            error: function(){
+                hide_loading();
+                showAlert('Failed to load election candidates.', 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)', 'vibrate');
             }
-        );
+        });
     });
 
 });

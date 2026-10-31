@@ -1,124 +1,320 @@
-<!-- Things to be Done-------------------->
-
 {% load static %}
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-    <title>Indian Election</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <title>{% block title %}BallotChain — Verifiable Voting{% endblock %}</title>
 
-    <link rel="stylesheet" type="text/css" href="{% static 'css/animations.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/loading.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/home.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/candidate-profile.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/voting.css' %}">
-    <link rel="stylesheet" type="text/css" href="{% static 'css/final-status.css' %}">
+    <!-- Google Fonts Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script> -->
+    <!-- Design System Foundation Stylesheets with Cache Busting -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/animations.css' %}?v=2.1.1">
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}?v=2.1.1">
+    <link rel="stylesheet" type="text/css" href="{% static 'dist/island.css' %}?v=2.1.1">
+
+    <!-- Core Scripts with Cache Busting -->
     <script src="{% static 'scripts/jquery.js' %}"></script>
-
-    <script type="text/javascript">
-        $(document).ready(function(){
-            $.getScript( "{% static 'scripts/base.js' %}" );
-            $.getScript( "{% static 'scripts/csrf.js' %}" );
-        });
-    </script>
+    <script src="{% static 'scripts/base.js' %}?v=2.1.1"></script>
+    <script src="{% static 'scripts/csrf.js' %}?v=2.1.1"></script>
+    <script type="module" src="{% static 'dist/island.js' %}?v=2.1.1"></script>
 
     {% block head %}{% endblock %}
-
 </head>
 
 <body>
+    <!-- Accessible skip link for keyboard navigation -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
-    <div class="gradient"></div>
+    <div class="app-shell">
+        <!-- ================================================================= -->
+        <!-- 1. APPLICATION SIDEBAR (240px Navy Desktop / Off-Canvas Mobile) -->
+        <!-- ================================================================= -->
+        <aside class="app-sidebar" id="app-sidebar" role="navigation" aria-label="Main Navigation">
+            <!-- Sidebar Brand Header -->
+            <div class="sidebar-header">
+                <a href="/" class="sidebar-brand" title="BallotChain Home">
+                    <div class="brand-icon">
+                        <img src="{% static 'images/logo.png' %}" alt="BallotChain Logo">
+                    </div>
+                    <div class="brand-info">
+                        <span class="brand-name">BallotChain</span>
+                        <span class="brand-subtitle">Verifiable Voting</span>
+                    </div>
+                </a>
+                <button type="button" class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Close navigation">
+                    &times;
+                </button>
+            </div>
 
-    <!-- -------------------------------------------- Main Content ----------------------------------- -->
+            <!-- Tenant Scope Chip (if tenant organization assigned) -->
+            {% if tenant_org %}
+            <div class="sidebar-scope" title="Active Tenant: {{ tenant_org.name }}">
+                <span class="scope-label">{{ tenant_org.name }}</span>
+            </div>
+            {% endif %}
 
-    <div class="main-content">
+            <!-- Role-Aware Navigation Menu -->
+            <nav class="sidebar-nav">
+                {% if user.is_authenticated %}
 
-        {% block main_content %}{% endblock %}
+                    <!-- PERSONA 1: PLATFORM ADMIN -->
+                    {% if account_persona == 'PLATFORM_ADMIN' or user.is_superuser %}
+                        <div class="drawer-section-heading">Platform Administration</div>
+                        <a class="sidebar-link" href="/dashboard/">Admin Dashboard</a>
+                        <a class="sidebar-link" href="/organizations/">Organizations</a>
+                        <a class="sidebar-link" href="/elections/">Elections</a>
+                        <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                        <a class="sidebar-link" href="/blockchain/verify-chain/">Chain Verification</a>
+                        <a class="sidebar-link" href="/">Home</a>
+                        <form method="POST" action="/logout/" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link sidebar-logout-btn">
+                                <span>Logout</span>
+                            </button>
+                        </form>
 
-    </div>
+                    <!-- PERSONA 2: ORGANIZATION ADMIN -->
+                    {% elif account_persona == 'ORGANIZATION_ADMIN' %}
+                        <div class="drawer-section-heading">Organization Administration</div>
+                        <a class="sidebar-link" href="/dashboard/">Admin Dashboard</a>
+                        <a class="sidebar-link" href="/elections/">Elections</a>
+                        <a class="sidebar-link" href="/positions/">Positions</a>
+                        <a class="sidebar-link" href="/candidates/">Candidates</a>
+                        <a class="sidebar-link" href="/eligibility/">Voter Eligibility</a>
+                        <a class="sidebar-link" href="/ballots/">Ballot Batches</a>
+                        <a class="sidebar-link" href="/show-result">Election Results</a>
+                        <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                        <a class="sidebar-link" href="/">Home</a>
+                        <form method="POST" action="/logout/" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link sidebar-logout-btn">
+                                <span>Logout</span>
+                            </button>
+                        </form>
 
-    <!-- ----------------------------- Header --------------------------------- -->
+                    <!-- PERSONA 3: ELECTION OFFICIAL -->
+                    {% elif account_persona == 'ELECTION_OFFICIAL' %}
+                        <div class="drawer-section-heading">Election Operations</div>
+                        <a class="sidebar-link" href="/dashboard/">Admin Dashboard</a>
+                        <a class="sidebar-link" href="/elections/">Assigned Elections</a>
+                        <a class="sidebar-link" href="/candidates/">Candidates</a>
+                        <a class="sidebar-link" href="/positions/">Positions</a>
+                        <a class="sidebar-link" href="/eligibility/">Voter Eligibility</a>
+                        <a class="sidebar-link" href="/ballots/">Ballot Batches</a>
+                        <a class="sidebar-link" href="/mine-block">Mine Block / Batches</a>
+                        <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                        <a class="sidebar-link" href="/">Home</a>
+                        <form method="POST" action="/logout/" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link sidebar-logout-btn">
+                                <span>Logout</span>
+                            </button>
+                        </form>
 
-    <div class="header">
+                    <!-- PERSONA 4: AUDITOR -->
+                    {% elif account_persona == 'AUDITOR' %}
+                        <div class="drawer-section-heading">Audit & Verification</div>
+                        <a class="sidebar-link" href="/dashboard/">Dashboard</a>
+                        <a class="sidebar-link" href="/elections/">Auditable Elections</a>
+                        <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                        <a class="sidebar-link" href="/blockchain/verify-chain/">Chain Verification</a>
+                        <a class="sidebar-link" href="/show-result">Election Results</a>
+                        <a class="sidebar-link" href="/">Home</a>
+                        <form method="POST" action="/logout/" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link sidebar-logout-btn">
+                                <span>Logout</span>
+                            </button>
+                        </form>
 
-            <div class="logo" title="Navigation Bar">
-                <img style="height: 40px; width: 40px; margin: auto;" src="{% static 'images/logo.png' %}">
-                <div class="logo-text">
-                    <span class="logo-text" style="font-size: 16px;">Indian Election</span>
-                    <span class="logo-text" style="font-size: 12px;">using blockchain</span>
+                    <!-- PERSONA 5: CANDIDATE -->
+                    {% elif account_persona == 'CANDIDATE' %}
+                        <div class="drawer-section-heading">Candidate Experience</div>
+                        <a class="sidebar-link" href="/dashboard/">Dashboard</a>
+                        <a class="sidebar-link" href="/profile/">My Profile</a>
+                        <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                        <a class="sidebar-link" href="/show-result">Election Results</a>
+                        <a class="sidebar-link" href="/">Home</a>
+                        <form method="POST" action="/logout/" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link sidebar-logout-btn">
+                                <span>Logout</span>
+                            </button>
+                        </form>
+
+                    <!-- PERSONA 6: VOTER -->
+                    {% else %}
+                        <div class="drawer-section-heading">Voter Experience</div>
+                        <a class="sidebar-link" href="/dashboard/">Dashboard</a>
+                        <a class="sidebar-link" href="/profile/">My Profile</a>
+                        <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                        <a class="sidebar-link" href="/show-result">Election Results</a>
+                        <a class="sidebar-link" href="/">Home</a>
+                        <form method="POST" action="/logout/" class="sidebar-logout-form">
+                            {% csrf_token %}
+                            <button type="submit" class="sidebar-link sidebar-logout-btn">
+                                <span>Logout</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                {% else %}
+                    <!-- PUBLIC / UNAUTHENTICATED NAVIGATION -->
+                    <div class="drawer-section-heading">Public Navigation</div>
+                    <a class="sidebar-link" href="/">Home</a>
+                    <a class="sidebar-link" href="/blockchain/">Ledger Explorer</a>
+                    <a class="sidebar-link" href="/show-result">Published Results</a>
+                    <a class="sidebar-link" href="/login/">Sign In</a>
+                {% endif %}
+            </nav>
+
+            <!-- Sidebar Network Status Footer -->
+            <div class="sidebar-footer">
+                <div class="network-pulse">
+                    <span class="pulse-dot"></span>
+                    <span>Consensus Active (7/7)</span>
                 </div>
+                <span class="version-tag">v2.1 Enterprise</span>
             </div>
+        </aside>
 
-            <div class="status-box">
-                <div class="status" style="color: rgb(102, 0, 128); background: rgba(201, 136, 255, 0.3);">
-                    Indian Election
+        <!-- Mobile Drawer Backdrop -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+        <!-- ================================================================= -->
+        <!-- 2. MAIN APPLICATION WRAPPER (TopBar + Content + Footer) -->
+        <!-- ================================================================= -->
+        <div class="app-main-wrapper">
+            <!-- Top Bar: Clean 56px Light Surface -->
+            <header class="app-topbar" role="banner">
+                <div class="topbar-left">
+                    <!-- Mobile Hamburger Button -->
+                    <button type="button" class="topbar-menu-btn" id="sidebar-toggle-btn" aria-label="Toggle navigation" aria-controls="app-sidebar" aria-expanded="false">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+
+                    <!-- Breadcrumbs Area -->
+                    <nav class="topbar-breadcrumbs" aria-label="Breadcrumb">
+                        <a href="/" class="breadcrumb-item">BallotChain</a>
+                        <span class="breadcrumb-separator">/</span>
+                        <span class="breadcrumb-current">{% block breadcrumb %}Platform{% endblock %}</span>
+                    </nav>
                 </div>
-            </div>
 
-            <div class="short-details">&nbsp;
-                <div class="basic-details"></div>
-                <img class="profile-pic"></img>
-            </div>
-    </div>
+                <div class="topbar-right">
+                    <!-- Network Operational Status Box -->
+                    <div class="status-box" aria-live="polite">
+                        <div class="status status-network">
+                            <span class="status-indicator-dot"></span>
+                            <span>Ledger Operational</span>
+                        </div>
+                    </div>
 
-    <!-- ---------------------------------------- Navigation Drawer -------------------------------- -->
+                    {% if user.is_authenticated %}
+                    <!-- Neutral User Profile Avatar Control (NO "Logged in: <user>" banner) -->
+                    <div class="topbar-profile" id="topbar-profile-container">
+                        <button type="button" class="profile-avatar-btn" id="profile-menu-toggle" aria-expanded="false" aria-haspopup="true" aria-label="User account menu">
+                            <span class="avatar-circle">{{ user_initials|default:"U" }}</span>
+                            <svg class="chevron-icon" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
 
-    <div class="navigation">
+                        <!-- Profile Dropdown Menu -->
+                        <div class="profile-dropdown" id="profile-dropdown-menu" role="menu" aria-label="User menu" hidden>
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name">{{ user.get_full_name|default:user.username }}</div>
+                                <div class="profile-dropdown-email">{{ user.email|default:user.username }}</div>
+                                <div class="profile-dropdown-role">
+                                    {% if user.is_superuser or account_persona == 'PLATFORM_ADMIN' %}Platform Admin
+                                    {% elif account_persona == 'ORGANIZATION_ADMIN' or user.userprofile.role == 'ORGANIZATION_ADMIN' %}Org Admin
+                                    {% elif account_persona == 'ELECTION_OFFICIAL' or user.userprofile.role == 'ELECTION_OFFICIAL' %}Election Official
+                                    {% elif account_persona == 'AUDITOR' or user.userprofile.role == 'AUDITOR' %}Auditor
+                                    {% elif account_persona == 'CANDIDATE' %}Candidate
+                                    {% elif account_persona == 'VOTER' %}Voter
+                                    {% else %}{{ persona_label|default:"User" }}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="profile-dropdown-divider"></div>
+                            <a href="/dashboard/" class="profile-dropdown-item" role="menuitem">
+                                <span>Dashboard</span>
+                            </a>
+                            <a href="/profile/" class="profile-dropdown-item" role="menuitem">
+                                <span>My Profile</span>
+                            </a>
+                            <a href="/blockchain/" class="profile-dropdown-item" role="menuitem">
+                                <span>Shared Ledger</span>
+                            </a>
+                            <div class="profile-dropdown-divider"></div>
+                            <form method="POST" action="/logout/" style="margin: 0; padding: 0;">
+                                {% csrf_token %}
+                                <button type="submit" class="profile-dropdown-item profile-dropdown-logout" style="background: none; border: none; width: 100%; text-align: left; cursor: pointer;" role="menuitem">
+                                    <span>Sign Out</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <!-- Unauthenticated Actions -->
+                    <div class="topbar-auth-links">
+                        <a href="/blockchain/" class="topbar-link">Ledger</a>
+                        <a href="/login/" class="btn btn-primary btn-sm">Sign In</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </header>
 
-        <div class="navigation-drawer">
+            <!-- Main Content Area -->
+            <main class="app-content" id="main-content" role="main">
+                {% if messages %}
+                <div class="messages-container" role="status" aria-live="polite">
+                    {% for message in messages %}
+                    <div class="alert alert-{{ message.tags|default:'info' }}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
 
-            <div class="drawer-item drawer-item-back">← Back</div>
+                {% block main_content %}{% endblock %}
+            </main>
 
-            <a class="drawer-item drawer-item-logo" title="Home" href="/">
-                <div class="logo">
-                    <img style="height: 60px; width: 60px; margin: auto;" src="{% static 'images/logo.png' %}">
-                    <div class="logo-text">
-                        <span class="logo-text" style="font-size: 20px;">Indian Election</span>
-                        <span class="logo-text" style="font-size: 14px;">using blockchain</span>
+            <!-- Global Footer -->
+            <footer class="app-footer" role="contentinfo">
+                <div class="footer-content">
+                    <span class="footer-brand">BallotChain v2.0 • Verifiable Organizational Voting</span>
+                    <div class="footer-links">
+                        <a href="/blockchain/" class="footer-link">Ledger Explorer</a>
+                        <span class="footer-sep">•</span>
+                        <a href="/show-result" class="footer-link">Results</a>
+                        <span class="footer-sep">•</span>
+                        {% if user.is_authenticated %}
+                        <a href="/dashboard/" class="footer-link">Dashboard</a>
+                        {% else %}
+                        <a href="/admin/login/" class="footer-link">Staff Login</a>
+                        {% endif %}
                     </div>
                 </div>
-            </a>
-
-            <a class="drawer-item" href="/create-dummy-data">
-                Dummy Data
-            </a>
-
-            <a class="drawer-item" href="/show-result">
-                Show Votes Count
-            </a>
-
-            <a class="drawer-item" href="/mine-block">
-                Mine Blocks
-            </a>
-
-            <a class="drawer-item" href="/blockchain">
-                Block Chain
-            </a>
-
-            <a class="drawer-item" href="/admin">
-                Admin
-            </a>
+            </footer>
         </div>
     </div>
 
-    <!-- --------------------------------- Loading ------------------------------ -->
-
-    <div class="loading-div">
-        <img src="{% static 'images/logo.png' %}">
-        <div>Indian Election</div>
-        <div>using BlockChain</div>
-        <div id="loading-message" class="loading-message">Please wait...</div>
-        <img class="loading-image" src="{% static 'images/loading.gif' %}">
+    <!-- Modern Loading Overlay -->
+    <div class="loading-div" role="status" aria-live="polite">
+        <div class="loading-spinner"></div>
+        <div class="loading-message" id="loading-message">Please wait...</div>
     </div>
-
-    <div class="view-msg">Best view in device with minimum resolution: 1280x720</div>
 
 </body>
 </html>

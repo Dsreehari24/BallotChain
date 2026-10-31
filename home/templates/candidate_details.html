@@ -6,13 +6,17 @@
         
         <table class="details">
             <tr class="details-row">
-                <td class="des">Aadhar No.:</td>
+                <td class="des">Voter ID / UID:</td>
                 <td>{{ details.uuid }}</td>
-                <td rowspan="5" style="text-align: center;"><img class="candidate-photo" src = '{{ details.profile_pic }}'></td>
+                <td rowspan="5" style="text-align: center;">
+                    <div style="width: 110px; height: 110px; border-radius: 50%; background: #f1f5f9; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #475569; margin: auto;">
+                        {{ details.name|slice:":1"|upper|default:"V" }}
+                    </div>
+                </td>
             </tr>
             <tr class="details-row">
                 <td class="des">Name:</td>
-                <td>{{ details.name }}</td>
+                <td><strong>{{ details.name }}</strong></td>
             </tr>
             <tr class="details-row">
                 <td class="des">DOB:</td>
@@ -23,41 +27,53 @@
                 <td>{{ details.pincode }}</td>
             </tr>
             <tr class="details-row">
-                <td class="des">Region:</td>
+                <td class="des">Section / Region:</td>
                 <td>{{ details.region }}</td>
             </tr>
         </table>
         
     </div>
 
+    <!-- Read-Only Associated Email Card -->
     <div class="associated-email-div">
         <div>
-            Associated Email-ID:
-            <br>
-            <span>(Key will be send to this email-id, please verify it)</span>
+            <div style="font-size: 13px; font-weight: 600; color: #1e293b;">Verified Identity Email</div>
+            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">One-Time Passcode and ballot key will be delivered to this verified institutional address.</div>
         </div>
         <div class="associated-email-id">
-            <input class="email-input" id="email-input" value="{{ details.email }}" disabled placeholder="Email-ID">
-            <img id="verified-badge" src="{% static 'images/verified.png' %}">
-            <a class="button" id="change-email">Change</a>
-            <a class="button" id="send-otp">Send OTP</a>
+            <input class="email-input" id="email-input" value="{{ details.email }}" disabled readonly placeholder="Email-ID">
+            <img id="verified-badge" src="{% static 'images/verified.png' %}" alt="Verified">
+            <button type="button" class="btn btn-primary btn-sm" id="send-otp">Send OTP</button>
         </div>
     </div>
 
-    <div class="email-alert-msg">Please enter a valid Email-ID and verfiy it. Key will be sent to this Email-ID.</div>
+    <div class="email-alert-msg">Please verify your Email-ID. Key will be sent to this Email-ID.</div>
 
-    <div>
-        <a class="vote-now disabled" id="vote-now">Vote Now</a>
+    <div style="margin-top: 24px; display: flex; justify-content: center;">
+        <a class="vote-now disabled" id="vote-now">Proceed to Ballot Selection</a>
     </div>
 
 </div>
 
+<!-- Centered Responsive Modal Overlay for OTP Verification (NO Navigation Collisions) -->
 <div class="otp-verification">
     <div class="otp-div">
-        <span id="otp-verfication-email">Email</span>
-        <input id="otp-input" placeholder="Enter 6-digit OTP sent to your Email-ID." style="width: 350px;">
-        <a class="button" id="verify">Verify</a>
-        <a class="button" id="cancel-otp">Cancel</a>
+        <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Step-Up Authentication</div>
+        <p style="font-size: 13px; color: #64748b; margin: 0 0 16px 0;">
+            Enter the 6-digit cryptographic verification code sent to<br>
+            <strong id="otp-verfication-email" style="color: #0f172a;">{{ details.email }}</strong>
+        </p>
+        
+        <!-- React Code Slots OTP Island Mount Point -->
+        <div id="ballotchain-otp-island-root" data-island="code-slots-otp" style="margin: 12px auto; display: flex; justify-content: center;"></div>
+
+        <!-- Accessible Fallback Input -->
+        <input id="otp-input" placeholder="Enter 6-digit OTP code" style="width: 240px; text-align: center; font-size: 16px; letter-spacing: 4px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 8px auto;" autocomplete="one-time-code" maxlength="6" inputmode="numeric">
+        
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 18px;">
+            <button type="button" class="btn btn-secondary btn-sm" id="cancel-otp">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" id="verify">Verify OTP</button>
+        </div>
     </div>
 </div>
 

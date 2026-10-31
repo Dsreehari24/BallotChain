@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Elections — BallotChain{% endblock %}
+{% block breadcrumb %}Elections{% endblock %}
+
+{% block main_content %}
+<div class="card" style="margin: 24px auto; max-width: 1100px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1 style="font-size: 22px; font-weight: 700; color: var(--bc-slate-900); margin-bottom: 4px;">Elections Catalog</h1>
+            <p style="font-size: 13px; color: var(--bc-slate-500); margin: 0;">Governed elections across authorized organizational scopes.</p>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="/elections/create/" class="btn btn-primary btn-sm" style="text-decoration: none;">
+                + New Election
+            </a>
+            <span class="badge badge-neutral">{{ elections|length }} Total Elections</span>
+        </div>
+    </div>
+
+    {% if elections %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--bc-slate-200); text-align: left; color: var(--bc-slate-500);">
+                    <th style="padding: 10px 12px;">ID</th>
+                    <th style="padding: 10px 12px;">Election Title</th>
+                    <th style="padding: 10px 12px;">Organization</th>
+                    <th style="padding: 10px 12px;">Status</th>
+                    <th style="padding: 10px 12px;">Start Date</th>
+                    <th style="padding: 10px 12px;">End Date</th>
+                    <th style="padding: 10px 12px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for elec in elections %}
+                <tr style="border-bottom: 1px solid var(--bc-slate-100);">
+                    <td style="padding: 12px; font-family: var(--font-mono); color: var(--bc-slate-500);">#{{ elec.id }}</td>
+                    <td style="padding: 12px; font-weight: 600; color: var(--bc-slate-900);">
+                        <a href="/elections/{{ elec.id }}/" style="color: inherit; text-decoration: none;">{{ elec.title }}</a>
+                    </td>
+                    <td style="padding: 12px; color: var(--bc-slate-600);">{{ elec.organization.name|default:"General" }}</td>
+                    <td style="padding: 12px;">
+                        {% if elec.status == 'OPEN' %}
+                            <span class="badge badge-success">Open</span>
+                        {% elif elec.status == 'DRAFT' %}
+                            <span class="badge badge-warning">Draft</span>
+                        {% else %}
+                            <span class="badge badge-error">Closed</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px; color: var(--bc-slate-500);">{{ elec.start_date|date:"Y-m-d H:i"|default:"—" }}</td>
+                    <td style="padding: 12px; color: var(--bc-slate-500);">{{ elec.end_date|date:"Y-m-d H:i"|default:"—" }}</td>
+                    <td style="padding: 12px; text-align: right;">
+                        <a href="/elections/{{ elec.id }}/" class="btn btn-secondary btn-sm" style="text-decoration: none;">View Detail</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 48px 24px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bc-slate-100); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: var(--bc-slate-400);">
+            🗳️
+        </div>
+        <h3 style="font-size: 16px; font-weight: 600; color: var(--bc-slate-800); margin-bottom: 6px;">No Elections Configured</h3>
+        <p style="font-size: 13px; color: var(--bc-slate-500); max-width: 420px; margin: 0 auto;">No elections are currently registered under your organizational permissions.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

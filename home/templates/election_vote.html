@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vote: {{ election.title }} — BallotChain{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'dist/island.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/candidate-profile.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/voting.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/final-status.css' %}">
+<script src="{% static 'scripts/base.js' %}"></script>
+<script src="{% static 'scripts/csrf.js' %}"></script>
+<script type="module" src="{% static 'dist/island.js' %}"></script>
+
+<style>
+    .vote-portal-container {
+        max-width: 960px;
+        margin: 24px auto;
+        padding: 0 16px;
+    }
+    .vote-portal-header {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 20px 24px;
+        border: 1px solid rgba(0,0,0,0.08);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+        margin-bottom: 24px;
+    }
+    .flow-steps-tracker {
+        display: flex;
+        gap: 12px;
+        margin-top: 14px;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 14px;
+        flex-wrap: wrap;
+    }
+    .step-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #64748b;
+    }
+    .step-pill.active {
+        background: #e0e7ff;
+        color: #4338ca;
+    }
+    .step-pill.done {
+        background: #dcfce7;
+        color: #166534;
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="vote-portal-container">
+
+    <!-- Election Header & Step-Up Tracker -->
+    <div class="vote-portal-header">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+            <div>
+                <a href="/elections/{{ election.id }}/" style="font-size: 13px; color: #4f46e5; text-decoration: none;">← Election Overview</a>
+                <h1 style="font-size: 22px; font-weight: 700; color: #111827; margin: 4px 0;">{{ election.title }}</h1>
+                <p style="font-size: 13px; color: #6b7280; margin: 0;">Organization: <strong>{{ election.organization.name|default:"General" }}</strong></p>
+            </div>
+            <div>
+                <span class="status-pill open">Voting Open</span>
+            </div>
+        </div>
+
+        <div class="flow-steps-tracker">
+            <span class="step-pill active" id="step-otp-pill">1. Identity Verification</span>
+            <span class="step-pill" id="step-select-pill">2. Candidate Selection</span>
+            <span class="step-pill" id="step-review-pill">3. Review Selection</span>
+            <span class="step-pill" id="step-key-pill">4. Private Key</span>
+            <span class="step-pill" id="step-commit-pill">5. Cryptographic Signature & Commit</span>
+        </div>
+    </div>
+
+    <!-- Active Voting Content Area -->
+    <div class="main-content" style="min-height: 400px;">
+        {{ candidate_details_html|safe }}
+    </div>
+
+</div>
+
+<!-- Hidden inputs to preserve election context across AJAX steps -->
+<input type="hidden" id="current-election-id" value="{{ election.id }}">
+{% endblock %}

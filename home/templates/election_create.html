@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Election — BallotChain{% endblock %}
+{% block breadcrumb %}
+    <a href="/elections/" style="color: var(--bc-slate-500); text-decoration: none;">Elections</a>
+    <span style="margin: 0 6px; color: var(--bc-slate-400);">/</span>
+    <span>Create Election</span>
+{% endblock %}
+
+{% block main_content %}
+<div class="card" style="margin: 24px auto; max-width: 720px;">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 20px; font-weight: 700; color: var(--bc-slate-900); margin-bottom: 4px;">Create New Election</h1>
+        <p style="font-size: 13px; color: var(--bc-slate-500); margin: 0;">Configure a new governed election tenant. Elections initialize in DRAFT state.</p>
+    </div>
+
+    {% if error %}
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 20px;" role="alert">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/elections/create/" novalidate>
+        {% csrf_token %}
+
+        <div style="margin-bottom: 18px;">
+            <label for="id_elec_title" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                Election Title <span style="color: #ef4444;">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="id_elec_title" 
+                name="title" 
+                value="{{ title|default:'' }}" 
+                class="form-input" 
+                style="width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none;"
+                placeholder="e.g. Student Council General Elections 2026" 
+                required 
+                autofocus
+            >
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label for="id_org_select" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                Host Organization <span style="color: #ef4444;">*</span>
+            </label>
+            {% if organizations|length == 1 and not is_platform_admin %}
+                <input type="hidden" name="organization_id" value="{{ organizations.0.id }}">
+                <div style="padding: 10px 12px; background: var(--bc-slate-100); border: 1px solid var(--bc-slate-300); border-radius: 6px; font-size: 14px; color: var(--bc-slate-800); font-weight: 500;">
+                    {{ organizations.0.name }}
+                </div>
+            {% else %}
+                <select 
+                    id="id_org_select" 
+                    name="organization_id" 
+                    class="form-input" 
+                    style="width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none; background: #ffffff;"
+                    required
+                >
+                    <option value="" disabled {% if not selected_org_id %}selected{% endif %}>Select an Organization...</option>
+                    {% for org in organizations %}
+                        <option value="{{ org.id }}" {% if selected_org_id|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
+                            {{ org.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label for="id_elec_desc" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                Description
+            </label>
+            <textarea 
+                id="id_elec_desc" 
+                name="description" 
+                rows="3" 
+                class="form-input" 
+                style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none; font-family: inherit; resize: vertical;"
+                placeholder="Institutional description, eligibility criteria, and election overview..."
+            >{{ description|default:'' }}</textarea>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+            <div>
+                <label for="id_start_date" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                    Start Date & Time
+                </label>
+                <input 
+                    type="datetime-local" 
+                    id="id_start_date" 
+                    name="start_date" 
+                    value="{{ start_date|default:'' }}" 
+                    class="form-input" 
+                    style="width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none;"
+                >
+            </div>
+            <div>
+                <label for="id_end_date" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                    End Date & Time
+                </label>
+                <input 
+                    type="datetime-local" 
+                    id="id_end_date" 
+                    name="end_date" 
+                    value="{{ end_date|default:'' }}" 
+                    class="form-input" 
+                    style="width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none;"
+                >
+            </div>
+        </div>
+
+        <div style="margin-bottom: 24px; padding: 12px 14px; background: var(--bc-slate-50); border: 1px solid var(--bc-slate-200); border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--bc-slate-800);">Initial Governance State</div>
+                <div style="font-size: 12px; color: var(--bc-slate-500);">Elections are safely created in DRAFT state and require explicit authorized activation.</div>
+            </div>
+            <span class="badge badge-neutral" style="font-size: 12px; font-weight: 600;">DRAFT</span>
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; border-top: 1px solid var(--bc-slate-200); padding-top: 18px;">
+            <a href="/elections/" class="btn btn-secondary btn-sm" style="text-decoration: none;">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-sm">Create Election</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

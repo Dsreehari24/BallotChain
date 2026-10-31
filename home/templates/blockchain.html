@@ -4,22 +4,40 @@
 
 {% block head %}
     <link rel="stylesheet" type="text/css" href="{% static 'css/blockchain.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'dist/island.css' %}">
 
     <script src="{% static 'scripts/base.js' %}"></script>
     <script src="{% static 'scripts/blockchain.js' %}"></script>
+    <script type="module" src="{% static 'dist/island.js' %}"></script>
     <script>
         $(document).ready(function(){
             hide_loading();
-            showAlert(
-            'All mined blocks are below. Click on block id to get information about that block.',
-            'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)');
         });
     </script>
 {% endblock %}
 
 {% block main_content %}
-<div class="blocks">
-    <table class="mine-block-result">
+
+<form style="display:none;" aria-hidden="true">{% csrf_token %}</form>
+
+<!-- Django safe JSON serialization of server-provided ledger data -->
+{{ blocks_json|json_script:"ballotchain-ledger-data" }}
+
+<!-- Modern React Bits Cubes Shared Blockchain Ledger Explorer Island Mount Point -->
+<div id="ballotchain-ledger-island-root" data-island="blockchain-ledger" class="w-full"></div>
+
+<!-- Accessible Tabular Fallback for Screen Readers & Non-JS Clients -->
+<div class="blocks" id="fallback-blockchain-table">
+    <div style="padding: 16px; margin-bottom: 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <h2 style="font-size: 18px; font-weight: bold; color: #111827; margin: 0 0 6px 0;">
+            BallotChain Distributed Ledger
+        </h2>
+        <p style="font-size: 13px; color: #6b7280; margin: 0;">
+            Page {{ blocks.number }} of {{ blocks.paginator.num_pages }} • Total Verified Blocks: {{ total_blocks }}
+        </p>
+    </div>
+
+    <table class="mine-block-result" aria-label="BallotChain Verified Blocks Table">
         <tr class="table-header">
             <td>Block ID</td>
             <td>Previous Hash</td>
@@ -27,31 +45,56 @@
             <td>Block Hash</td>
             <td>Nonce</td>
             <td>Timestamp</td>
-            <td> <div class="verify-button" title="Click to verify selected Blocks"> <input type="checkbox" onchange="verifySelect(this)"> <span onclick="verifyBlock(this)">Verify</span> </div> </td>
+            <td>
+                <div class="verify-button" title="Click to verify selected Blocks">
+                    <input type="checkbox" onchange="verifySelect(this)" aria-label="Select all blocks">
+                    <span onclick="verifyBlock(this)">Verify</span>
+                </div>
+            </td>
         </tr>
 
         {% if blocks %}
 
         {% for block in blocks %}
         <tr id="{{ block.id }}">
-            <td> <a class="block-info-link" href="/block-info/?id={{block.id}}"> {{ block.id }} </a> </td>
-            <td title="{{ block.prev_hash }}" style="color: rgb(78, 0, 151);">{{ block.prev_hash }}</td>
-            <td title="{{ block.merkle_hash }}" style="color: rgb(133, 0, 151);">{{ block.merkle_hash }}</td>
-            <td title="{{ block.this_hash }}" style="color: rgb(151, 0, 113);">{{ block.this_hash }}</td>
+            <td> <a class="block-info-link" href="/block-info/?id={{ block.id }}"> #{{ block.id }} </a> </td>
+            <td title="{{ block.prev_hash }}" style="color: rgb(78, 0, 151); font-family: monospace;">{{ block.prev_hash }}</td>
+            <td title="{{ block.merkle_hash }}" style="color: rgb(133, 0, 151); font-family: monospace;">{{ block.merkle_hash }}</td>
+            <td title="{{ block.this_hash }}" style="color: rgb(151, 0, 113); font-family: monospace;">{{ block.this_hash }}</td>
             <td>{{ block.nonce }}</td>
             <td>{{ block.timestamp|date:"Y-m-d" }} {{ block.timestamp|time:"H:i:s" }}</td>
-            <td> <div class="verify-button" title="Click to verify this Block"> <input type="checkbox" onchange="verifySelect(this)"> <span onclick="verifyBlock(this)">Verify</span> </div> </td>
+            <td>
+                <div class="verify-button" title="Click to verify this Block">
+                    <input type="checkbox" onchange="verifySelect(this)" aria-label="Select block {{ block.id }}">
+                    <span onclick="verifyBlock(this)">Verify</span>
+                </div>
+            </td>
         </tr>
         {% endfor %}
 
         {% else %}
         <tr>
-            <td colspan="7">No Blocks</td>
+            <td colspan="7">No Blocks recorded in ledger.</td>
         </tr>
         {% endif %}
 
     </table>
+
+    {% if blocks.paginator.num_pages > 1 %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; padding: 12px; background: white; border-radius: 8px; font-size: 13px;">
+        <div>
+            Page {{ blocks.number }} of {{ blocks.paginator.num_pages }}
+        </div>
+        <div style="display: flex; gap: 8px;">
+            {% if blocks.has_previous %}
+                <a href="?page={{ blocks.previous_page_number }}&order={{ order }}&type={{ block_type }}" style="padding: 6px 12px; background: #f3f4f6; color: #374151; border-radius: 6px; text-decoration: none;">← Previous</a>
+            {% endif %}
+            {% if blocks.has_next %}
+                <a href="?page={{ blocks.next_page_number }}&order={{ order }}&type={{ block_type }}" style="padding: 6px 12px; background: #f3f4f6; color: #374151; border-radius: 6px; text-decoration: none;">Next →</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 {% endblock %}
-

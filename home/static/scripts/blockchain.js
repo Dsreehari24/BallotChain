@@ -116,23 +116,36 @@ function sendBlockVerifyRequest(selected_blocks) {
 }
 
 function synNow(blocks) {
-
-    // for( var block of blocks ){
-        var id = blocks;
-        $.ajax(
-            {
-                type:'GET',
-                url: '/sync-block/',
-                data: {'block-id': id},
-                success: function(data){
-                    if(data.success) {
-                        $('#'+id).css({'background': 'transparent'});
-                        $('#'+id+' td:last-child').html('<span style="color:rgb(0,150,0); font-size: 16px; font-variant: small-caps; letter-spacing: 2px;">Verified</span>');
-                    }
-                }
-    
+    var id = blocks;
+    var token = (typeof getCsrfToken === 'function' ? getCsrfToken() : '') ||
+                $('meta[name="csrf-token"]').attr('content') ||
+                $('input[name="csrfmiddlewaretoken"]').val() ||
+                (typeof getCookie === 'function' ? getCookie('csrftoken') : '') ||
+                '';
+    var headers = {};
+    if (token) {
+        headers['X-CSRFToken'] = token;
+    }
+    var postData = {'block-id': id, 'id': id, 'block_id': id};
+    if (token) {
+        postData['csrfmiddlewaretoken'] = token;
+    }
+    $.ajax({
+        type: 'POST',
+        url: '/sync-block/',
+        headers: headers,
+        data: postData,
+        success: function(data){
+            if(data.success) {
+                $('#'+id).css({'background': 'transparent'});
+                $('#'+id+' td:last-child').html('<span style="color:rgb(0,150,0); font-size: 16px; font-variant: small-caps; letter-spacing: 2px;">Verified</span>');
+            } else {
+                alert(data.error || 'Block synchronization could not be completed.');
             }
-        );
-
-    // }
+        },
+        error: function(xhr) {
+            var err = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Synchronization failed (' + xhr.status + ')';
+            alert(err);
+        }
+    });
 }

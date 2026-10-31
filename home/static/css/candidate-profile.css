@@ -1,37 +1,31 @@
+/* Modern BallotChain Voter Identification & OTP Step-Up Authentication */
+
 .candidate-details-div {
-    margin: auto;
-    /* width: 100%; */
-    min-width: 900px;
-    transition: all 1s linear;
+    margin: 0 auto;
+    max-width: 720px;
+    width: 100%;
+    transition: all 0.3s ease;
 }
 
 .candidate-details {
-    margin: auto;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
-
-    padding: 10px;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    animation: slide-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-.candidate-photo {
-    margin: auto;
-    width: 150px;
-    height: 150px;
-    border-radius: 100%;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
 }
 
 .details {
     margin: auto;
     border-collapse: collapse;
-    width: calc(100% - 20px);
+    width: 100%;
 }
 
 .details-row {
-    border-bottom: 1.5px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid #f1f5f9;
 }
 
 .details-row:last-child {
@@ -39,142 +33,124 @@
 }
 
 .details td {
-    padding: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #1e293b;
 }
 
 .des {
-    color: rgb(100, 100, 100);
-    font-variant: small-caps;
-    font-size: 14px;
-}
-
-.candidate-details-div > div:last-child {
-    width: 100%;
-    margin-top: 20px;
-    display: flex;
-    opacity: 0;
-    animation: slide-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 1s forwards;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    width: 140px;
 }
 
 .vote-now {
-    margin: auto;
-    background: #047c00;
-    background: linear-gradient(#06c200, #058a00);
-    color: white;
-    border: none;
-    padding: 10px 40px;
-    border-radius: 3px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #1e293b;
+    color: #ffffff !important;
+    border: 1px solid #0f172a;
+    padding: 10px 24px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    width: max-content;
-
-    transition: all 0.3s linear;
+    text-decoration: none;
+    transition: all 0.2s ease;
 }
 
-.vote-now:hover {
-    box-shadow: 0 0 16px #09ff00;
-}
-
-.button {
-    margin-left: 15px;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    box-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-    cursor: pointer;
-    width: max-content;
-}
-
-.button:hover {
-    box-shadow: 0 0 8px #00aeff;
+.vote-now:hover:not(.disabled) {
+    background: #0f172a;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .associated-email-div {
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
     align-items: center;
-    margin: auto;
-    margin-top: 20px;
-    background: linear-gradient(90deg, rgba(225, 0, 255, 0.9),rgba(0, 47, 255, 0.9));
-    box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
-    padding: 10px 20px;
-    border-radius: 3px;
-    opacity: 0;
-    animation: slide-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
-}
-.associated-email-div * {
-    color: rgb(255, 255, 255);
+    margin-top: 18px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
-.associated-email-div span {
-    font-size: 14px;
-}
-
-#change-email, #send-otp {
-    font-size: 14px;
+.associated-email-id {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .email-input {
-    background: transparent;
-    border: none;
-}
-
-.email-input-div {
-    display: flex;
-    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    color: #334155;
+    cursor: not-allowed;
+    min-width: 220px;
 }
 
 .email-alert-msg {
-    color: red;
+    color: #b91c1c;
     margin-top: 10px;
     text-align: center;
-    font-size: 14px;
+    font-size: 13px;
     display: none;
 }
 
 .email-alert-msg-slide-fade-in {
     display: block;
-    opacity: 0;
-    animation: slide-fade-in 1s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.5s forwards;
 }
 
 #verified-badge {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     display: none;
-    margin-left: 5px;
 }
 
+/* Centered Responsive Modal Overlay — Eliminates All Sidebar Collisions */
 div.otp-verification {
     position: fixed;
-    top: 50px;
-    left: 0;
+    inset: 0;
     width: 100vw;
-    height: calc(100vh - 50px);
-    background: rgba(0, 0, 0, 0.5);
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
     display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
 div.otp-div {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
+    position: relative;
+    max-width: 460px;
     width: 100%;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.8);
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08);
+    padding: 28px 24px;
+    border: 1px solid #e2e8f0;
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin: auto;
+    z-index: 10000;
+    box-sizing: border-box;
 }
 
-div.otp-div * {
-    margin: auto 10px;
-    font-size: 16px;
-}
-
-div.otp-div .button {
-    background: black;
-    box-shadow: 0 0 3px rgba(255, 255, 255, 0.3); 
+#ballotchain-otp-island-root,
+#ballotchain-otp-island-root * {
+    margin: 0 !important;
 }
 
 .hide {

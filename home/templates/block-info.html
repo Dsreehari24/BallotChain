@@ -9,35 +9,41 @@
     <script>
         $(document).ready(function(){
             hide_loading();
-            var block_id = {{this_block.id}};
+            var block_id = "{{this_block.id|default:''}}";
             showAlert(
             'Block Information.',
             'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)');
 
             $('.sync-block').click(function(){
                 show_loading('Please wait... we are syncing this block.');
-                    $.ajax({
-
-                        type:"GET",
-                        url: "/sync-block/",
-                        data: {'block-id': block_id},
-                        success: function( data )
-                        {
-                            show_loading('Synchronisation complete. Please wait... while the block is being loaded.');
-                            if(data.success){
-                                location.href = '/block-info/?id='+block_id;
-                            }
-
-                            else {
-                            }
+                $.ajax({
+                    type: "POST",
+                    url: "/sync-block/",
+                    headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                    data: {'block-id': block_id, 'id': block_id, 'block_id': block_id, 'csrfmiddlewaretoken': '{{ csrf_token }}'},
+                    success: function( data )
+                    {
+                        show_loading('Synchronisation complete. Please wait... while the block is being loaded.');
+                        if(data.success){
+                            location.href = '/block-info/?id='+block_id;
+                        } else {
+                            hide_loading();
+                            alert(data.error || 'Block synchronization could not be completed.');
                         }
-                    });
+                    },
+                    error: function( xhr ) {
+                        hide_loading();
+                        var err = (xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : 'Synchronization failed (' + xhr.status + ')';
+                        alert(err);
+                    }
+                });
             });
         });
     </script>
 {% endblock %}
 
 {% block main_content %}
+<form style="display:none;" aria-hidden="true">{% csrf_token %}</form>
 <div class="block-info">
     <table class="block-info-table">
         <tr>

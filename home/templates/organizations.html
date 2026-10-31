@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Organizations — BallotChain{% endblock %}
+{% block breadcrumb %}Organizations{% endblock %}
+
+{% block main_content %}
+<div class="card" style="margin: 24px auto; max-width: 1100px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1 style="font-size: 22px; font-weight: 700; color: var(--bc-slate-900); margin-bottom: 4px;">Registered Organizations</h1>
+            <p style="font-size: 13px; color: var(--bc-slate-500); margin: 0;">Multi-tenant organizational entities managed under platform governance.</p>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <a href="/organizations/create/" class="btn btn-primary btn-sm" style="text-decoration: none;">
+                + Add Organization
+            </a>
+            <span class="badge badge-neutral">{{ organizations|length }} Total Organizations</span>
+        </div>
+    </div>
+
+    {% if organizations %}
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+                <tr style="border-bottom: 2px solid var(--bc-slate-200); text-align: left; color: var(--bc-slate-500);">
+                    <th style="padding: 10px 12px;">ID</th>
+                    <th style="padding: 10px 12px;">Organization Name</th>
+                    <th style="padding: 10px 12px;">Description</th>
+                    <th style="padding: 10px 12px;">Contact Information</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for org in organizations %}
+                <tr style="border-bottom: 1px solid var(--bc-slate-100);">
+                    <td style="padding: 12px; font-family: var(--font-mono); color: var(--bc-slate-500);">#{{ org.id }}</td>
+                    <td style="padding: 12px; font-weight: 600; color: var(--bc-slate-900);">{{ org.name }}</td>
+                    <td style="padding: 12px; color: var(--bc-slate-600);">{{ org.description|default:"—" }}</td>
+                    <td style="padding: 12px; color: var(--bc-slate-600);">{{ org.contact_information|default:"—" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 48px 24px; text-align: center;">
+        <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--bc-slate-100); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: var(--bc-slate-400);">
+            🏢
+        </div>
+        <h3 style="font-size: 16px; font-weight: 600; color: var(--bc-slate-800); margin-bottom: 6px;">No Organizations Configured</h3>
+        <p style="font-size: 13px; color: var(--bc-slate-500); max-width: 420px; margin: 0 auto;">No organizational tenants have been created yet under this platform deployment.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

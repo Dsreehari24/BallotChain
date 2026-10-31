@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Organization — BallotChain{% endblock %}
+{% block breadcrumb %}
+    <a href="/organizations/" style="color: var(--bc-slate-500); text-decoration: none;">Organizations</a>
+    <span style="margin: 0 6px; color: var(--bc-slate-400);">/</span>
+    <span>Create Organization</span>
+{% endblock %}
+
+{% block main_content %}
+<div class="card" style="margin: 24px auto; max-width: 680px;">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 20px; font-weight: 700; color: var(--bc-slate-900); margin-bottom: 4px;">Add New Organization</h1>
+        <p style="font-size: 13px; color: var(--bc-slate-500); margin: 0;">Register an institutional tenant entity for election hosting and member management.</p>
+    </div>
+
+    {% if error %}
+    <div style="background-color: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 20px;" role="alert">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/organizations/create/" novalidate>
+        {% csrf_token %}
+
+        <div style="margin-bottom: 18px;">
+            <label for="id_org_name" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                Organization Name <span style="color: #ef4444;">*</span>
+            </label>
+            <input 
+                type="text" 
+                id="id_org_name" 
+                name="name" 
+                value="{{ name|default:'' }}" 
+                class="form-input" 
+                style="width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none;"
+                placeholder="e.g. Malla Reddy University" 
+                required 
+                autofocus
+            >
+        </div>
+
+        <div style="margin-bottom: 18px;">
+            <label for="id_org_description" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                Description
+            </label>
+            <textarea 
+                id="id_org_description" 
+                name="description" 
+                rows="3" 
+                class="form-input" 
+                style="width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none; font-family: inherit; resize: vertical;"
+                placeholder="Brief description of the organization and its academic / enterprise scope..."
+            >{{ description|default:'' }}</textarea>
+        </div>
+
+        <div style="margin-bottom: 24px;">
+            <label for="id_org_contact" style="display: block; font-size: 13px; font-weight: 600; color: var(--bc-slate-700); margin-bottom: 6px;">
+                Contact Information
+            </label>
+            <input 
+                type="text" 
+                id="id_org_contact" 
+                name="contact_information" 
+                value="{{ contact_information|default:'' }}" 
+                class="form-input" 
+                style="width: 100%; height: 40px; padding: 0 12px; font-size: 14px; border: 1px solid var(--bc-slate-300); border-radius: 6px; outline: none;"
+                placeholder="e.g. admin@mallareddyuniversity.ac.in, +91-40-12345678"
+            >
+        </div>
+
+        <div style="display: flex; gap: 12px; align-items: center; justify-content: flex-end; border-top: 1px solid var(--bc-slate-200); padding-top: 18px;">
+            <a href="/organizations/" class="btn btn-secondary btn-sm" style="text-decoration: none;">Cancel</a>
+            <button type="submit" class="btn btn-primary btn-sm">Create Organization</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

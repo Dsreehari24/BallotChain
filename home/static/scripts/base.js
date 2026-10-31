@@ -1,61 +1,62 @@
+/**
+ * BallotChain Modern Shell & Core Interaction Scripts
+ * Backward-compatible with all existing voting, ledger, and candidate scripts.
+ */
+
 var aadhar = "";
 var candidate_details_json;
 var parties_list_json;
 
-// Alert message using innerHTML
-function showAlert(inner_html, bg_color, color, animation=null){
+/**
+ * Global Alert Notification
+ * Renders modern toast or status message within the topbar/status container.
+ */
+function showAlert(inner_html, bg_color, color, animation = null) {
+    var statusBox = $('.status-box');
+    if (statusBox.length) {
+        var alertEl = $('<div class="status" style="margin-bottom: 6px; color: ' + color + '; background: ' + bg_color + '; border-radius: 9999px; padding: 4px 12px; font-size: 12px; font-weight: 500;">' + inner_html + '</div>');
+        statusBox.prepend(alertEl);
 
-    inner_html = '<div class="status"  style="margin-bottom: 10px; color: '+color+'; background: '+bg_color+'">'+inner_html+'</div>';
-    $('.status-box').prepend(inner_html);
-    $('.status').css('transform', 'translate(0, -33px)')
-    $('.status:first-child').addClass('translateStatus');
-    $('.status:last-child').addClass('translateStatus2');
-
-    setTimeout(function(){
-        $('.status:last-child').remove();
-        $('.status').css({'transform': 'translate(0, 0)', 'margin': 'auto'});
-    }, 1000);
-
-    if(animation){
-        setTimeout(function(){
-            $('.status').removeClass('translateStatus');
-            $('.status').addClass(animation);
-            setTimeout(function(){
-                $('.status').removeClass(animation);
-            }, 1000);
-        }, 1000);
+        setTimeout(function() {
+            alertEl.fadeOut(300, function() {
+                alertEl.remove();
+            });
+        }, 3500);
     }
 }
 
-// Show Loading
+/**
+ * Show Modern Full-Screen Loading Overlay
+ */
 function show_loading(message = 'Please wait...') {
     $('.loading-message').html(message);
     $('.loading-div').css({'display': 'flex', 'opacity': '1'});
 }
 
-// Hide Loading
-function hide_loading(){
-
-    $('.main-content').hide();
+/**
+ * Hide Loading Overlay and Reveal Main Content
+ */
+function hide_loading() {
     $('.loading-div').animate(
         {'opacity': '0'},
         {
-            duration: 1000,
+            duration: 300,
             complete: function() {
                 $('.loading-div').hide();
-                $('.main-content').css('display', 'flex');
+                $('.app-content, .main-content').css('display', 'block');
             }
         }
     );
 }
 
-// Hide Loading without reload
-function hide_loading_without_reload(){
-
+/**
+ * Hide Loading Overlay Without Altering Content Display
+ */
+function hide_loading_without_reload() {
     $('.loading-div').animate(
         {'opacity': '0'},
         {
-            duration: 1000,
+            duration: 300,
             complete: function() {
                 $('.loading-div').hide();
             }
@@ -63,47 +64,64 @@ function hide_loading_without_reload(){
     );
 }
 
-// Animation during showing drawer
+/**
+ * Mobile Sidebar Drawer Controls
+ */
 function show_drawer() {
-    $('.navigation').show();
-    $('.navigation-drawer').removeClass('drawer-slide-to-left');
-    $('.navigation-drawer').addClass('drawer-slide-from-left');
-    $('.navigation-drawer').show();
+    $('#app-sidebar').addClass('sidebar-open');
+    $('#sidebar-backdrop').addClass('active');
+    $('#sidebar-toggle-btn').attr('aria-expanded', 'true');
 }
 
-// Animation during hiding drawer
 function hide_drawer() {
-    $('.navigation-drawer').removeClass('drawer-slide-from-left');
-    $('.navigation-drawer').addClass('drawer-slide-to-left');
-    setTimeout(function(){
-        $('.navigation-drawer').hide();
-        $('.navigation').hide();
-    }, 500);
+    $('#app-sidebar').removeClass('sidebar-open');
+    $('#sidebar-backdrop').removeClass('active');
+    $('#sidebar-toggle-btn').attr('aria-expanded', 'false');
 }
 
-$(document).ready(function(){
-
-    // -------------------- Drawer things ----------------------
-    $('.logo').click(function(){
+$(document).ready(function() {
+    // 1. Mobile Sidebar Toggle & Backdrop
+    $('#sidebar-toggle-btn').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
         show_drawer();
     });
-    
-    $('.navigation').click(function(event){
-        if($(event.target).prop('class')=='navigation'){
-            hide_drawer();
-        }
-    });
-    
-    $('.drawer-item-back').click(function(){
+
+    $('#sidebar-close-btn, #sidebar-backdrop').on('click', function() {
         hide_drawer();
     });
 
-    $('#aadhar').val('');
-    
-    // Disable Right Click
-    document.addEventListener('contextmenu', event => event.preventDefault());
-});
+    // 2. TopBar Neutral User Profile Dropdown
+    $('#profile-menu-toggle').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var menu = $('#profile-dropdown-menu');
+        var isHidden = menu.prop('hidden');
+        menu.prop('hidden', !isHidden);
+        $(this).attr('aria-expanded', isHidden ? 'true' : 'false');
+    });
 
-// 'rgba(201, 136, 255, 0.3)', 'rgb(102, 0, 128)' Normal
-// 'rgba(136, 255, 156, 0.3)', 'rgb(0, 128, 0)' Success
-// 'rgba(255, 82, 82, 0.3)', 'rgb(122, 0, 0)' Error
+    // Dismiss Profile Dropdown on Click Outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('#topbar-profile-container').length) {
+            $('#profile-dropdown-menu').prop('hidden', true);
+            $('#profile-menu-toggle').attr('aria-expanded', 'false');
+        }
+    });
+
+    // 3. Escape Key Handler (Dismiss Drawer & Profile Dropdown)
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+            hide_drawer();
+            $('#profile-dropdown-menu').prop('hidden', true);
+            $('#profile-menu-toggle').attr('aria-expanded', 'false');
+        }
+    });
+
+    // Legacy drawer compatibility hooks
+    $('.logo').on('click', function() {
+        if (window.innerWidth <= 1024) {
+            show_drawer();
+        }
+    });
+});

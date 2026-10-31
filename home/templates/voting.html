@@ -1,53 +1,182 @@
 {% load static %}
 
+<!-- Django safe JSON serialization of server-provided candidate parties -->
+{{ parties|json_script:"ballotchain-parties-data" }}
+
 <div class="party-selection">
 
-    <input class="search-box" placeholder="Search..." type="text" id="search" autocomplete="off">
+    <!-- Step 2: Candidate Selection -->
+    <div id="step-2-selection-view">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+            <div>
+                <h2 style="font-size: 18px; font-weight: 700; color: #0f172a; margin: 0;">Select Your Candidate</h2>
+                <p style="font-size: 13px; color: #64748b; margin: 2px 0 0 0;">Choose a candidate from the roster below to cast your ballot.</p>
+            </div>
+            <input class="search-box" placeholder="Search candidates..." type="text" id="search" autocomplete="off" style="max-width: 260px;">
+        </div>
 
-    <div class="party-list">
+        <!-- React Flip Card Candidate Roster Mount Point -->
+        <div id="ballotchain-candidate-cards-island-root" data-island="candidate-flip-cards" class="candidate-cards-container"></div>
 
-        {% for party in parties %}
-
-            <div class="option" id="{{ party.party_id }}">
-                <div class="party-logo">
-                    <img style="width: 80px;" src="{% static party.party_logo %}">
+        <!-- Fallback Candidate List for Non-JS / Screen Readers -->
+        <div class="party-list" id="fallback-party-list">
+            {% for party in parties %}
+                <div class="option" id="{{ party.party_id }}" data-pos="{{ party.position_title }}" data-name="{{ party.candidate_name|default:party.party_name }}" data-logo="{% static party.party_logo|default:'images/logo.png' %}">
+                    <div class="party-name" style="padding: 14px; font-weight: 600;">
+                        {{ party.candidate_name|default:party.party_name }}
+                        {% if party.position_title %}
+                            <span style="font-size: 12px; font-weight: 400; color: #64748b; display: block;">{{ party.position_title }}</span>
+                        {% endif %}
+                    </div>
                 </div>
-                <div class="divider"></div>
-                <div class="party-name">
-                    {{ party.party_name }}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step 3: Review Selections Card -->
+    <div id="step-3-review-view" style="display: none; max-width: 600px; margin: 20px auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Review Your Selection</div>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">Please review your chosen candidate before authorizing cryptographic signature.</p>
+
+        <div style="display: flex; align-items: center; gap: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; margin-bottom: 20px;">
+            <img id="review-candidate-logo" class="confirmation-party-logo" src="{% static 'images/logo.png' %}" alt="Candidate Logo" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0;">
+            <div>
+                <div id="review-candidate-name" class="confirmation-party-name" style="font-size: 18px; font-weight: 700; color: #0f172a;">Selected Candidate</div>
+                <div id="review-position-title" style="font-size: 13px; color: #4f46e5; font-weight: 600;">Office / Position</div>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-back-to-candidates">← Change Candidate</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-proceed-to-key">Proceed to Private Key Verification →</button>
+        </div>
+    </div>
+
+    <!-- Step 4: Dedicated Private Key Verification Card -->
+    <div id="step-4-key-view" style="display: none; max-width: 600px; margin: 20px auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Private Key Verification</div>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+            Enter or provide your voting private key to authorize the cryptographic signature for this ballot.<br>
+            <span style="font-size: 12px; color: #475569;">A private key was delivered to your verified institutional email.</span>
+        </p>
+
+        <div style="margin-bottom: 14px;">
+            <label for="private-key-input" style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">
+                ECC NIST P-256 Voting Private Key
+            </label>
+            <div style="position: relative;">
+                <textarea id="private-key-input" rows="4" style="width: 100%; font-family: monospace; font-size: 11px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; resize: vertical;" placeholder="Paste your NIST P-256 voting private key received via email..." spellcheck="false" autocomplete="off"></textarea>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                <button type="button" id="btn-toggle-key-mask" style="background: none; border: none; font-size: 12px; color: #4f46e5; cursor: pointer; padding: 0;">
+                    👁 Mask / Hide Key Content
+                </button>
+                <span style="font-size: 11px; color: #94a3b8;">Cryptographically verified in-session</span>
+            </div>
+        </div>
+
+        <div id="key-verification-alert" style="display: none; padding: 10px 14px; border-radius: 6px; font-size: 13px; margin-bottom: 14px;"></div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-back-to-review">← Back to Review</button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn-verify-private-key">Verify Private Key</button>
+        </div>
+    </div>
+
+    <!-- Step 5: Authorize & Commit Ballot Card (SlideCommit) -->
+    <div id="step-5-commit-view" style="display: none; max-width: 600px; margin: 20px auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); text-align: center;">
+        
+        <!-- Candidate Summary Card -->
+        <div id="step-5-candidate-summary" style="display: flex; align-items: center; gap: 16px; padding: 14px 18px; background: #f8fafc; border-radius: 8px; border: 1px solid #f1f5f9; margin-bottom: 20px; text-align: left;">
+            <img id="step-5-candidate-logo" class="confirmation-party-logo" src="{% static 'images/logo.png' %}" alt="Candidate Logo" style="width: 56px; height: 56px; max-width: 56px; max-height: 56px; min-width: 56px; min-height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid #e2e8f0; flex-shrink: 0;">
+            <div style="flex-grow: 1; min-width: 0;">
+                <div id="step-5-candidate-name" style="font-size: 16px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Selected Candidate</div>
+                <div id="step-5-position-title" style="font-size: 13px; color: #4f46e5; font-weight: 600;">Office / Position</div>
+            </div>
+            <div style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 20px; font-size: 11px; font-weight: 600; color: #065f46; white-space: nowrap; flex-shrink: 0;">
+                <span>✓ Key Verified</span>
+            </div>
+        </div>
+
+        <!-- Default Interactive Commit Controls -->
+        <div id="step-5-commit-controls">
+            <div style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Authorize & Cast Ballot</div>
+            <p style="font-size: 13px; color: #64748b; margin-bottom: 20px;">
+                Slide the commit handle right or click confirm to sign and broadcast your ballot to the blockchain ledger.
+            </p>
+
+            <!-- React Slide Commit Ballot Submission Mount Point -->
+            <div id="ballotchain-slide-commit-island-root" data-island="slide-commit-ballot"></div>
+
+            <div class="vote-confirmation-buttons" style="margin-top: 16px; display: flex; gap: 10px; justify-content: center;">
+                <button type="button" id="final-confirm" class="btn btn-primary btn-sm" style="display: inline-block;">Confirm & Submit Vote</button>
+                <button type="button" id="cancel-confirm" class="btn btn-secondary btn-sm" style="display: inline-block;">Cancel</button>
+            </div>
+        </div>
+
+        <!-- Processing State (Clean CSS Spinner, never permanently stuck) -->
+        <div id="step-5-processing" style="display: none; padding: 30px 16px; text-align: center;">
+            <div class="ballotchain-spinner" style="margin: 0 auto 16px auto; width: 44px; height: 44px; border: 4px solid #e0e7ff; border-top-color: #4f46e5; border-radius: 50%; animation: bc-spin 0.9s linear infinite;"></div>
+            <div style="font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 6px;">Recording Vote on Blockchain</div>
+            <p style="font-size: 13px; color: #64748b; margin: 0;">
+                Cryptographically signing ballot and mining block into the immutable ledger...
+            </p>
+        </div>
+
+        <!-- Error State with Clear Alert and Retry Action -->
+        <div id="step-5-error" style="display: none; margin-top: 16px; text-align: left; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px;">
+            <div style="display: flex; align-items: flex-start; gap: 12px;">
+                <span style="font-size: 20px; color: #dc2626; line-height: 1;">⚠️</span>
+                <div style="flex-grow: 1;">
+                    <div style="font-size: 14px; font-weight: 700; color: #991b1b; margin-bottom: 4px;">Submission Failed</div>
+                    <div id="step-5-error-text" style="font-size: 13px; color: #7f1d1d; margin-bottom: 12px;">An error occurred while submitting your ballot.</div>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-primary btn-sm" id="btn-retry-commit">Try Again</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-error-back-to-candidates">Change Candidate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Receipt State (Modern BallotChain Confirmation) -->
+        <div id="step-5-success" style="display: none; text-align: center; padding: 10px 0;">
+            <div style="width: 56px; height: 56px; background: #ecfdf5; border: 2px solid #a7f3d0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; font-size: 28px; color: #059669;">
+                ✓
+            </div>
+            <div style="font-size: 20px; font-weight: 800; color: #065f46; margin-bottom: 4px;">Vote Successfully Cast & Confirmed!</div>
+            <p style="font-size: 13px; color: #475569; margin-bottom: 20px;">
+                Your vote was cryptographically sealed and permanently appended to the BallotChain blockchain ledger.
+            </p>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: left; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
+                    <span style="font-size: 12px; font-weight: 600; color: #64748b;">Ledger Status</span>
+                    <span id="success-block-badge" style="font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: #e0e7ff; color: #4338ca;">Mined in Block</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; margin-bottom: 10px;">
+                    <span style="font-size: 12px; font-weight: 600; color: #64748b;">Candidate Selected</span>
+                    <span id="success-candidate-text" style="font-size: 13px; font-weight: 700; color: #0f172a;">Candidate</span>
+                </div>
+                <div>
+                    <span style="font-size: 12px; font-weight: 600; color: #64748b; display: block; margin-bottom: 4px;">Ballot Verification Tracker</span>
+                    <div id="success-tracker-text" style="font-family: monospace; font-size: 12px; color: #0f172a; word-break: break-all; background: #ffffff; padding: 6px 10px; border-radius: 4px; border: 1px solid #cbd5e1;">N/A</div>
                 </div>
             </div>
 
-        {% endfor %}
-
-    </div>
-
-    <div class="dialog">
-        <div class="vote-confirmation">
-            <div class="confirm">Confirm ?</div>
-            <img class="confirmation-party-logo">
-            <div class="confirmation-party-name">Congress</div>
-            <textarea id="private-key-input" style="margin-top: 20px;" placeholder="Input private key sent to you at your email-id" rows="5"></textarea>
-            <div class="vote-confirmation-buttons">
-                <a id="final-confirm">Yes, Vote</a>
-                <a id="cancel-confirm">No, Cancel</a>
+            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <a href="/blockchain/" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+                    <span>View on Blockchain Ledger →</span>
+                </a>
+                <a href="/dashboard/" class="btn btn-secondary btn-sm">
+                    Return to Dashboard
+                </a>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="all-done">
-    <div class="front">
-        <div class="selected-party">
-                <img class="voted-party-image" src="{% static 'images/logo.png' %}">
-                <div class="final-message">
-                </div>
-        </div>
-        <img class="loading-img" style="margin-top: 50px;" src= "{% static 'images/loading.gif' %}">
-        <div>Please wait... we are processing your priceless vote !</div>
     </div>
+
 </div>
 
 <script>
-    $.getScript( "{% static 'scripts/voting.js' %}" );
+    $.getScript("{% static 'scripts/voting.js' %}");
 </script>

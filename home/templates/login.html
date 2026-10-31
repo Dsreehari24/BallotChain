@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Sign In — BallotChain</title>
+    
+    {% load static %}
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" type="text/css" href="{% static 'css/base.css' %}?v=2.1.1">
+    
+    <style>
+        :root {
+            --login-navy-dark: #0f172a;
+            --login-navy: #1e293b;
+            --login-blue: #4f46e5;
+            --login-blue-hover: #4338ca;
+            --login-slate-50: #f8fafc;
+            --login-slate-200: #e2e8f0;
+            --login-slate-400: #94a3b8;
+            --login-slate-500: #64748b;
+            --login-slate-700: #334155;
+            --login-slate-900: #0f172a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--login-slate-50);
+            min-height: 100vh;
+            display: flex;
+            color: var(--login-slate-700);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .login-layout {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* Left Institutional Brand Showcase Panel */
+        .login-brand-panel {
+            flex: 1.2;
+            background: linear-gradient(150deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 48px;
+            color: #ffffff;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-brand-panel::before {
+            content: '';
+            position: absolute;
+            top: -20%;
+            right: -20%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .brand-header-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: #ffffff;
+            z-index: 1;
+        }
+
+        .brand-logo-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+        }
+
+        .brand-logo-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .brand-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .brand-tagline {
+            font-size: 11px;
+            color: #a5b4fc;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-weight: 600;
+        }
+
+        .brand-testimonial-area {
+            max-width: 520px;
+            z-index: 1;
+        }
+
+        .brand-quote {
+            font-size: 24px;
+            font-weight: 300;
+            line-height: 1.45;
+            color: #f1f5f9;
+            margin-bottom: 24px;
+            font-style: italic;
+        }
+
+        .brand-stats-grid {
+            display: grid;
+            grid-cols: 3;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            z-index: 1;
+        }
+
+        .brand-stat-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            padding: 16px;
+            backdrop-filter: blur(8px);
+        }
+
+        .brand-stat-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 2px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .brand-stat-lbl {
+            font-size: 11px;
+            color: #c7d2fe;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* Right Form Panel */
+        .login-form-panel {
+            width: 480px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 48px;
+            box-shadow: -4px 0 24px rgba(0, 0, 0, 0.03);
+            position: relative;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .back-to-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--login-slate-500);
+            text-decoration: none;
+            margin-bottom: 28px;
+            font-weight: 500;
+            transition: color 0.15s ease;
+        }
+
+        .back-to-home:hover {
+            color: var(--login-blue);
+        }
+
+        .login-heading {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--login-slate-900);
+            letter-spacing: -0.02em;
+            margin-bottom: 6px;
+        }
+
+        .login-subheading {
+            font-size: 13px;
+            color: var(--login-slate-500);
+            margin-bottom: 28px;
+            line-height: 1.4;
+        }
+
+        .login-error-alert {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--login-slate-700);
+            margin-bottom: 6px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .login-input {
+            width: 100%;
+            height: 42px;
+            padding: 0 14px;
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--login-slate-900);
+            background: #ffffff;
+            border: 1px solid var(--login-slate-200);
+            border-radius: 8px;
+            outline: none;
+            transition: all 0.15s ease;
+        }
+
+        .login-input:focus {
+            border-color: var(--login-blue);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+
+        .input-password-wrapper .login-input {
+            padding-right: 44px;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 42px;
+            width: 42px;
+            background: none;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--login-slate-400);
+            cursor: pointer;
+            transition: color 0.15s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--login-slate-700);
+        }
+
+        .submit-btn {
+            width: 100%;
+            height: 44px;
+            margin-top: 8px;
+            background-color: var(--login-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--login-blue-hover);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        .login-security-notice {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--login-slate-200);
+            text-align: center;
+            font-size: 11px;
+            color: var(--login-slate-400);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .login-brand-panel {
+                display: none;
+            }
+            .login-form-panel {
+                width: 100%;
+                box-shadow: none;
+                padding: 32px 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-layout">
+        <!-- Left Brand Showcase Panel -->
+        <aside class="login-brand-panel" aria-label="BallotChain Overview">
+            <a href="/" class="brand-header-link" title="Return to BallotChain Home">
+                <div class="brand-logo-circle">
+                    <img src="{% static 'images/logo.png' %}" alt="BallotChain">
+                </div>
+                <div>
+                    <div class="brand-title">BallotChain</div>
+                    <div class="brand-tagline">Verifiable Voting Platform</div>
+                </div>
+            </a>
+
+            <div class="brand-testimonial-area">
+                <blockquote class="brand-quote">
+                    "Cryptographic ballot verification and an immutable ledger ensure complete institutional integrity for organizational elections."
+                </blockquote>
+                <p style="font-size: 13px; color: #c7d2fe; font-weight: 500;">
+                    Enterprise Zero-Knowledge Architecture
+                </p>
+            </div>
+
+            <div class="brand-stats-grid">
+                <div class="brand-stat-card">
+                    <div class="brand-stat-val">5,645+</div>
+                    <div class="brand-stat-lbl">Blocks Anchored</div>
+                </div>
+                <div class="brand-stat-card">
+                    <div class="brand-stat-val">8,804+</div>
+                    <div class="brand-stat-lbl">Ballots Audited</div>
+                </div>
+                <div class="brand-stat-card">
+                    <div class="brand-stat-val">100%</div>
+                    <div class="brand-stat-lbl">Verifiable Chain</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Form Panel -->
+        <main class="login-form-panel" role="main">
+            <div class="login-box">
+                <a href="/" class="back-to-home" title="Return to BallotChain Homepage">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Back to Home</span>
+                </a>
+
+                <h1 class="login-heading">Sign In</h1>
+                <p class="login-subheading">Enter your organization email and password to access your BallotChain dashboard.</p>
+
+                {% if error %}
+                <div class="login-error-alert" role="alert">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <span>{{ error }}</span>
+                </div>
+                {% endif %}
+
+                <form method="POST" action="/login/" novalidate>
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ next_url|default:'' }}">
+
+                    <div class="form-group">
+                        <label for="id_email" class="form-label">Email Address</label>
+                        <div class="input-wrapper">
+                            <input 
+                                type="email" 
+                                id="id_email" 
+                                name="email" 
+                                class="login-input" 
+                                placeholder="name@organization.com" 
+                                value="{{ email|default:'' }}" 
+                                required 
+                                autocomplete="email" 
+                                autofocus
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="id_password" class="form-label">Password</label>
+                        <div class="input-wrapper input-password-wrapper">
+                            <input 
+                                type="password" 
+                                id="id_password" 
+                                name="password" 
+                                class="login-input" 
+                                placeholder="Enter your password" 
+                                required 
+                                autocomplete="current-password"
+                            >
+                            <button 
+                                type="button" 
+                                class="password-toggle-btn" 
+                                id="toggle-password" 
+                                aria-label="Toggle password visibility"
+                                onclick="togglePasswordVisibility()"
+                            >
+                                <svg id="eye-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <span>Sign In</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </form>
+
+                <div class="login-security-notice">
+                    Protected by BallotChain Enterprise Cryptography. <br>
+                    Voting credentials and one-time step-up tokens are managed securely per election.
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('id_password');
+            const eyeIcon = document.getElementById('eye-icon');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+                eyeIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                `;
+            } else {
+                pwdInput.type = 'password';
+                eyeIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
